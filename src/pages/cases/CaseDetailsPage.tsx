@@ -1,44 +1,42 @@
-import { useMemo, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { useMemo } from 'react';
+import { useOutletContext, useParams } from 'react-router-dom';
 import PageHeader from '../../components/PageHeader';
+import Table from '../../components/Table';
 import { fraudCases, users } from '../../data/mockData';
+import type { AppLanguage } from '../../layout/AppLayout';
 
-type Language = 'en' | 'ar';
-
-const translations = {
+const pageCopy = {
   en: {
-    pageTitle: 'Case Details',
-    pageSubtitle:
-      'Complete view of the external submission, internal enrichment, workflow, indicators, and confirmed fraud details.',
+    title: 'Case Details',
+    subtitle:
+      'Review the case overview first, then update workflow, indicators, and confirmed fraud details.',
     claim: 'Claim',
     releaseAssignment: 'Release Assignment',
     saveChanges: 'Save Changes',
 
-    caseOverview: 'Case Overview',
+    overview: 'Case Overview',
     reporter: 'Reporter',
     workflow: 'Workflow',
-    assignmentAndStatus: 'Assignment and Status',
+    assignmentStatus: 'Assignment and Status',
     indicators: 'Indicators',
     fraudIndicators: 'Fraud Indicators',
     confirmedFraud: 'Confirmed Fraud',
     fraudDetails: 'Fraud Details',
     assignmentHistory: 'Assignment History',
-    ownershipTrail: 'Ownership Trail',
 
     caseType: 'Case Type',
     insuranceType: 'Insurance Type',
     suspectedAmount: 'Suspected Amount',
-    caseEntryDate: 'Case Entry Date',
+    entryDate: 'Case Entry Date',
     assignedUser: 'Assigned User',
     closureDate: 'Closure Date',
     closureReason: 'Closure Reason',
     description: 'Description',
     attachmentsView: 'Attachments View',
 
-    reporterName: 'Reporter Name',
     email: 'Email',
     mobileNumber: 'Mobile Number',
-    nationalIdIqama: 'ID / Iqama Number',
+    nationalId: 'ID / Iqama Number',
 
     assignmentDate: 'Assignment Date',
     assignedBy: 'Assigned By',
@@ -49,7 +47,6 @@ const translations = {
     fraudIndicatorType: 'Fraud Indicator Type',
     indicatorDescription: 'Indicator Description',
     occurrenceCount: 'Occurrence Count',
-    riskScore: 'Risk Score',
     fraudOfficerDecision: 'Fraud Officer Decision',
 
     claimType: 'Claim Type',
@@ -59,20 +56,11 @@ const translations = {
     actionTaken: 'Action Taken',
     referredEntity: 'Referred Entity',
 
-    previousUser: 'Previous User',
-    newUser: 'New User',
-    changedBy: 'Changed By',
-    changeDate: 'Change Date',
-    changeReason: 'Change Reason',
-
+    unassigned: 'Unassigned',
     notClosed: 'Not Closed',
     notAvailable: 'Not Available',
-    unassigned: 'Unassigned',
     noAttachments: 'No Attachments',
     noSupportingFiles: 'No supporting files submitted yet.',
-
-    languageEnglish: 'English',
-    languageArabic: 'العربية',
 
     indicatorTypeOptions: [
       'Duplicate Claims',
@@ -82,14 +70,13 @@ const translations = {
       'High Value Repetition',
       'Other',
     ],
-    officerDecisionOptions: [
+    decisionOptions: [
       'Proceed with investigation',
       'Pending additional information',
       'Fraud confirmed',
       'Rejected',
       'Close case',
     ],
-
     statusOptions: [
       'New',
       'Under Review',
@@ -99,40 +86,42 @@ const translations = {
       'Rejected',
       'Closed',
     ],
+
+    historyAssignedTo: 'Assigned to User',
+    historyDate: 'Change Date',
+    historyNotes: 'Notes',
   },
   ar: {
-    pageTitle: 'تفاصيل البلاغ',
-    pageSubtitle:
-      'عرض كامل لبيانات البلاغ الخارجي، والحقول الداخلية، وسير العمل، والمؤشرات، وتفاصيل الاحتيال المؤكد.',
+    title: 'تفاصيل البلاغ',
+    subtitle:
+      'راجع نظرة عامة البلاغ أولًا، ثم حدّث سير العمل، والمؤشرات، وتفاصيل الاحتيال المؤكد.',
     claim: 'استلام البلاغ',
     releaseAssignment: 'إلغاء التعيين',
     saveChanges: 'حفظ التغييرات',
 
-    caseOverview: 'نظرة عامة على البلاغ',
+    overview: 'نظرة عامة على البلاغ',
     reporter: 'بيانات المُبلّغ',
     workflow: 'سير العمل',
-    assignmentAndStatus: 'التعيين والحالة',
+    assignmentStatus: 'التعيين والحالة',
     indicators: 'المؤشرات',
     fraudIndicators: 'مؤشرات الاحتيال',
     confirmedFraud: 'الاحتيال المؤكد',
     fraudDetails: 'تفاصيل الاحتيال',
     assignmentHistory: 'سجل التعيين',
-    ownershipTrail: 'سجل انتقال الملكية',
 
     caseType: 'نوع البلاغ',
     insuranceType: 'نوع التأمين',
     suspectedAmount: 'المبلغ محل الاشتباه',
-    caseEntryDate: 'تاريخ إدخال البلاغ',
+    entryDate: 'تاريخ إدخال البلاغ',
     assignedUser: 'المستخدم المسؤول',
     closureDate: 'تاريخ الإغلاق',
     closureReason: 'سبب الإغلاق',
     description: 'الوصف',
     attachmentsView: 'عرض المرفقات',
 
-    reporterName: 'اسم المُبلّغ',
     email: 'البريد الإلكتروني',
     mobileNumber: 'رقم الجوال',
-    nationalIdIqama: 'رقم الهوية / الإقامة',
+    nationalId: 'رقم الهوية / الإقامة',
 
     assignmentDate: 'تاريخ التعيين',
     assignedBy: 'تم التعيين بواسطة',
@@ -143,7 +132,6 @@ const translations = {
     fraudIndicatorType: 'نوع مؤشر الاحتيال',
     indicatorDescription: 'وصف المؤشر',
     occurrenceCount: 'عدد مرات التكرار',
-    riskScore: 'درجة الخطورة',
     fraudOfficerDecision: 'قرار موظف وحدة مكافحة الاحتيال',
 
     claimType: 'نوع المطالبة',
@@ -153,20 +141,11 @@ const translations = {
     actionTaken: 'الإجراء المتخذ',
     referredEntity: 'الجهة المحالة لها',
 
-    previousUser: 'المستخدم السابق',
-    newUser: 'المستخدم الجديد',
-    changedBy: 'تم التغيير بواسطة',
-    changeDate: 'تاريخ التغيير',
-    changeReason: 'سبب التغيير',
-
+    unassigned: 'غير معيّن',
     notClosed: 'غير مغلق',
     notAvailable: 'غير متوفر',
-    unassigned: 'غير معيّن',
     noAttachments: 'لا توجد مرفقات',
     noSupportingFiles: 'لا توجد ملفات داعمة مرفقة حتى الآن.',
-
-    languageEnglish: 'English',
-    languageArabic: 'العربية',
 
     indicatorTypeOptions: [
       'مطالبات مكررة',
@@ -176,14 +155,13 @@ const translations = {
       'تكرار مبالغ عالية',
       'أخرى',
     ],
-    officerDecisionOptions: [
+    decisionOptions: [
       'المتابعة والتحقيق',
       'بانتظار معلومات إضافية',
       'تم تأكيد الاحتيال',
       'مرفوض',
       'إغلاق البلاغ',
     ],
-
     statusOptions: [
       'جديد',
       'قيد المراجعة',
@@ -193,41 +171,38 @@ const translations = {
       'مرفوض',
       'مغلق',
     ],
+
+    historyAssignedTo: 'المستخدم المسؤول',
+    historyDate: 'تاريخ التغيير',
+    historyNotes: 'ملاحظات',
   },
 };
 
 export default function CaseDetailsPage() {
   const { caseId } = useParams();
+  const { language } = useOutletContext<{ language: AppLanguage }>();
   const item = fraudCases.find((entry) => entry.id === caseId) ?? fraudCases[0];
-  const [language, setLanguage] = useState<Language>('en');
 
-  const t = useMemo(() => translations[language], [language]);
+  const t = useMemo(() => pageCopy[language], [language]);
   const isArabic = language === 'ar';
 
   return (
     <div dir={isArabic ? 'rtl' : 'ltr'}>
       <PageHeader
-        title={`${t.pageTitle} - ${item.id}`}
-        subtitle={t.pageSubtitle}
+        title={`${t.title} - ${item.id}`}
+        subtitle={t.subtitle}
         action={
           <div className="actions-inline" style={{ gap: 12 }}>
             <button className="btn">{t.claim}</button>
             <button className="btn">{t.releaseAssignment}</button>
             <button className="btn primary">{t.saveChanges}</button>
-            <button
-              className="btn"
-              type="button"
-              onClick={() => setLanguage(language === 'en' ? 'ar' : 'en')}
-            >
-              {language === 'en' ? t.languageArabic : t.languageEnglish}
-            </button>
           </div>
         }
       />
 
       <section className="case-overview-grid">
         <div className="card case-overview-card">
-          <span className="eyebrow">{t.caseOverview}</span>
+          <span className="eyebrow">{t.overview}</span>
 
           <div className="case-overview-top">
             <div>
@@ -236,6 +211,7 @@ export default function CaseDetailsPage() {
                 {item.claimId} - {item.caseSource}
               </p>
             </div>
+
             <div className="actions-inline">
               <span className={`badge ${item.priorityLevel.toLowerCase()}`}>{item.priorityLevel}</span>
               <span className="case-status-pill">{item.caseStatus}</span>
@@ -247,26 +223,32 @@ export default function CaseDetailsPage() {
               <span className="muted small">{t.caseType}</span>
               <strong>{item.caseType}</strong>
             </div>
+
             <div className="case-metric">
               <span className="muted small">{t.insuranceType}</span>
               <strong>{item.insuranceType}</strong>
             </div>
+
             <div className="case-metric">
               <span className="muted small">{t.suspectedAmount}</span>
               <strong>{item.suspectedAmount}</strong>
             </div>
+
             <div className="case-metric">
-              <span className="muted small">{t.caseEntryDate}</span>
+              <span className="muted small">{t.entryDate}</span>
               <strong>{item.caseEntryDate}</strong>
             </div>
+
             <div className="case-metric">
               <span className="muted small">{t.assignedUser}</span>
               <strong>{item.assignedUser ?? t.unassigned}</strong>
             </div>
+
             <div className="case-metric">
               <span className="muted small">{t.closureDate}</span>
               <strong>{item.closureDate || t.notClosed}</strong>
             </div>
+
             <div className="case-metric">
               <span className="muted small">{t.closureReason}</span>
               <strong>{item.closureReason || t.notAvailable}</strong>
@@ -276,7 +258,7 @@ export default function CaseDetailsPage() {
           <div className="form-grid single top-gap">
             <label>
               <span>{t.description}</span>
-              <textarea defaultValue={item.submissionDetails} rows={5} />
+              <textarea defaultValue={item.submissionDetails} rows={5} disabled />
             </label>
 
             <div>
@@ -300,20 +282,23 @@ export default function CaseDetailsPage() {
           </div>
         </div>
 
-        <div className="card case-contact-card">
+        <div className="card case-contact-card compact-reporter-card">
           <span className="eyebrow">{t.reporter}</span>
           <h3>{item.reporterName}</h3>
-          <div className="case-contact-list">
+
+          <div className="case-contact-list compact">
             <div>
               <span className="muted small">{t.email}</span>
               <strong>{item.reporterEmail}</strong>
             </div>
+
             <div>
               <span className="muted small">{t.mobileNumber}</span>
               <strong>{item.reporterMobile}</strong>
             </div>
+
             <div>
-              <span className="muted small">{t.nationalIdIqama}</span>
+              <span className="muted small">{t.nationalId}</span>
               <strong>{item.nationalIdOrIqama}</strong>
             </div>
           </div>
@@ -324,7 +309,7 @@ export default function CaseDetailsPage() {
         <div className="case-main-column">
           <div className="card">
             <span className="eyebrow">{t.workflow}</span>
-            <h3>{t.assignmentAndStatus}</h3>
+            <h3>{t.assignmentStatus}</h3>
 
             <div className="form-grid single">
               <label>
@@ -353,6 +338,7 @@ export default function CaseDetailsPage() {
                   <span>{t.assignmentDate}</span>
                   <input defaultValue={item.assignmentDate} placeholder={t.assignmentDate} />
                 </label>
+
                 <label>
                   <span>{t.assignedBy}</span>
                   <input defaultValue={item.assignedBy} placeholder={t.assignedBy} />
@@ -394,21 +380,15 @@ export default function CaseDetailsPage() {
                 <textarea rows={4} defaultValue={item.fraudIndicator.indicatorDescription} />
               </label>
 
-              <div className="two-col-form form-grid">
-                <label>
-                  <span>{t.occurrenceCount}</span>
-                  <input defaultValue={String(item.fraudIndicator.occurrenceCount)} />
-                </label>
-                <label>
-                  <span>{t.riskScore}</span>
-                  <input defaultValue={String(item.fraudIndicator.riskScore)} />
-                </label>
-              </div>
+              <label>
+                <span>{t.occurrenceCount}</span>
+                <input defaultValue={String(item.fraudIndicator.occurrenceCount)} />
+              </label>
 
               <label>
                 <span>{t.fraudOfficerDecision}</span>
                 <select defaultValue={item.fraudIndicator.fraudOfficerDecision}>
-                  {t.officerDecisionOptions.map((option) => (
+                  {t.decisionOptions.map((option) => (
                     <option key={option}>{option}</option>
                   ))}
                 </select>
@@ -427,22 +407,27 @@ export default function CaseDetailsPage() {
                 <span>{t.claimType}</span>
                 <input defaultValue={item.claimType} />
               </label>
+
               <label>
                 <span>{t.fraudConfirmedDate}</span>
                 <input type="date" defaultValue={item.fraudConfirmedDate} />
               </label>
+
               <label>
                 <span>{t.fraudDetectionMethod}</span>
                 <input defaultValue={item.fraudDetectionMethod} />
               </label>
+
               <label>
                 <span>{t.fraudAmount}</span>
                 <input defaultValue={item.fraudAmount} />
               </label>
+
               <label>
                 <span>{t.actionTaken}</span>
                 <input defaultValue={item.actionTaken} />
               </label>
+
               <label>
                 <span>{t.referredEntity}</span>
                 <input defaultValue={item.referredEntity} />
@@ -450,32 +435,18 @@ export default function CaseDetailsPage() {
             </div>
           </div>
 
-          <div className="card case-quick-notes">
-            <span className="eyebrow">{t.assignmentHistory}</span>
-            <h3>{t.ownershipTrail}</h3>
-
-            <div className="activity-list">
-              {item.assignmentHistory.map((entry, index) => (
-                <div className="activity-item" key={`${entry.changeDate}-${index}`}>
-                  <strong>
-                    {t.previousUser}: {entry.previousUser ?? t.unassigned}
-                  </strong>
-                  <span>
-                    {t.newUser}: {entry.newUser ?? t.unassigned}
-                  </span>
-                  <span>
-                    {t.changedBy}: {entry.changedBy}
-                  </span>
-                  <span>
-                    {t.changeDate}: {entry.changeDate}
-                  </span>
-                  <span>
-                    {t.changeReason}: {entry.changeReason}
-                  </span>
-                </div>
-              ))}
-            </div>
-          </div>
+          <Table
+            title={t.assignmentHistory}
+            headers={[t.historyAssignedTo, t.historyDate, t.historyNotes]}
+          >
+            {item.assignmentHistory.map((entry, index) => (
+              <tr key={`${entry.changeDate}-${index}`}>
+                <td>{entry.newUser ?? t.unassigned}</td>
+                <td>{entry.changeDate}</td>
+                <td>{entry.changeReason}</td>
+              </tr>
+            ))}
+          </Table>
         </div>
       </section>
     </div>
