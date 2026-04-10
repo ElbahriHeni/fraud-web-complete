@@ -5,7 +5,62 @@ import Table from '../../components/Table';
 import { fraudCases, users } from '../../data/mockData';
 import type { AppLanguage } from '../../layout/AppLayout';
 
-const pageCopy = {
+type PageCopy = {
+  title: string;
+  subtitle: string;
+  claim: string;
+  releaseAssignment: string;
+  saveChanges: string;
+  overview: string;
+  reporter: string;
+  workflow: string;
+  assignmentStatus: string;
+  indicators: string;
+  fraudIndicators: string;
+  confirmedFraud: string;
+  fraudDetails: string;
+  assignmentHistory: string;
+  caseType: string;
+  insuranceType: string;
+  suspectedAmount: string;
+  entryDate: string;
+  assignedUser: string;
+  closureDate: string;
+  closureReason: string;
+  description: string;
+  attachmentsView: string;
+  email: string;
+  mobileNumber: string;
+  nationalId: string;
+  assignmentDate: string;
+  assignedBy: string;
+  reassignmentReason: string;
+  caseStatus: string;
+  fraudUnitNotes: string;
+  fraudIndicatorType: string;
+  indicatorDescription: string;
+  occurrenceCount: string;
+  fraudOfficerDecision: string;
+  claimType: string;
+  fraudConfirmedDate: string;
+  fraudDetectionMethod: string;
+  fraudAmount: string;
+  actionTaken: string;
+  referredEntity: string;
+  unassigned: string;
+  notClosed: string;
+  notAvailable: string;
+  noAttachments: string;
+  noSupportingFiles: string;
+  indicatorTypeOptions: string[];
+  decisionOptions: string[];
+  statusOptions: string[];
+  historyAssignedTo: string;
+  historyDate: string;
+  historyNotes: string;
+};
+
+const pageCopy: Record<AppLanguage, PageCopy> = {
   en: {
     title: 'Case Details',
     subtitle:
@@ -327,7 +382,7 @@ export default function CaseDetailsPage() {
               <label>
                 <span>{t.caseStatus}</span>
                 <select defaultValue={item.caseStatus}>
-                  {t.statusOptions.map((status) => (
+                  {t.statusOptions.map((status: string) => (
                     <option key={status}>{status}</option>
                   ))}
                 </select>
@@ -369,7 +424,7 @@ export default function CaseDetailsPage() {
               <label>
                 <span>{t.fraudIndicatorType}</span>
                 <select defaultValue={item.fraudIndicator.fraudIndicatorType}>
-                  {t.indicatorTypeOptions.map((option) => (
+                  {t.indicatorTypeOptions.map((option: string) => (
                     <option key={option}>{option}</option>
                   ))}
                 </select>
@@ -388,7 +443,7 @@ export default function CaseDetailsPage() {
               <label>
                 <span>{t.fraudOfficerDecision}</span>
                 <select defaultValue={item.fraudIndicator.fraudOfficerDecision}>
-                  {t.decisionOptions.map((option) => (
+                  {t.decisionOptions.map((option: string) => (
                     <option key={option}>{option}</option>
                   ))}
                 </select>
