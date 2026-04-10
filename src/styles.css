@@ -771,6 +771,7 @@ tbody tr:hover {
   grid-template-columns: minmax(0, 1.45fr) minmax(280px, 0.75fr);
   gap: 16px;
   margin-bottom: 20px;
+  align-items: start;
 }
 
 .case-overview-card,
@@ -778,6 +779,10 @@ tbody tr:hover {
 .case-quick-notes {
   display: grid;
   gap: 16px;
+}
+
+.case-contact-card {
+  align-self: start;
 }
 
 .case-overview-top {
@@ -1136,16 +1141,16 @@ label span {
 }
 
 .compact-reporter-card {
-  gap: 12px;
-}
-
-.case-contact-list.compact {
   gap: 10px;
 }
 
+.case-contact-list.compact {
+  gap: 8px;
+}
+
 .case-contact-list.compact > div {
-  padding: 12px 14px;
-  gap: 4px;
+  padding: 10px 12px;
+  gap: 2px;
 }
 
 .case-overview-card textarea:disabled {
