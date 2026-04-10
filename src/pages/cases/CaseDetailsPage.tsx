@@ -68,7 +68,6 @@ const pageCopy: Record<AppLanguage, PageCopy> = {
     claim: 'Claim',
     releaseAssignment: 'Release Assignment',
     saveChanges: 'Save Changes',
-
     overview: 'Case Overview',
     reporter: 'Reporter',
     workflow: 'Workflow',
@@ -78,7 +77,6 @@ const pageCopy: Record<AppLanguage, PageCopy> = {
     confirmedFraud: 'Confirmed Fraud',
     fraudDetails: 'Fraud Details',
     assignmentHistory: 'Assignment History',
-
     caseType: 'Case Type',
     insuranceType: 'Insurance Type',
     suspectedAmount: 'Suspected Amount',
@@ -88,35 +86,29 @@ const pageCopy: Record<AppLanguage, PageCopy> = {
     closureReason: 'Closure Reason',
     description: 'Description',
     attachmentsView: 'Attachments View',
-
     email: 'Email',
     mobileNumber: 'Mobile Number',
     nationalId: 'ID / Iqama Number',
-
     assignmentDate: 'Assignment Date',
     assignedBy: 'Assigned By',
     reassignmentReason: 'Reassignment Reason',
     caseStatus: 'Case Status',
     fraudUnitNotes: 'Fraud Unit Notes',
-
     fraudIndicatorType: 'Fraud Indicator Type',
     indicatorDescription: 'Indicator Description',
     occurrenceCount: 'Occurrence Count',
     fraudOfficerDecision: 'Fraud Officer Decision',
-
     claimType: 'Claim Type',
     fraudConfirmedDate: 'Fraud Confirmed Date',
     fraudDetectionMethod: 'Fraud Detection Method',
     fraudAmount: 'Fraud Amount',
     actionTaken: 'Action Taken',
     referredEntity: 'Referred Entity',
-
     unassigned: 'Unassigned',
     notClosed: 'Not Closed',
     notAvailable: 'Not Available',
     noAttachments: 'No Attachments',
     noSupportingFiles: 'No supporting files submitted yet.',
-
     indicatorTypeOptions: [
       'Duplicate Claims',
       'Billing Pattern Anomaly',
@@ -141,7 +133,6 @@ const pageCopy: Record<AppLanguage, PageCopy> = {
       'Rejected',
       'Closed',
     ],
-
     historyAssignedTo: 'Assigned to User',
     historyDate: 'Change Date',
     historyNotes: 'Notes',
@@ -153,7 +144,6 @@ const pageCopy: Record<AppLanguage, PageCopy> = {
     claim: 'استلام البلاغ',
     releaseAssignment: 'إلغاء التعيين',
     saveChanges: 'حفظ التغييرات',
-
     overview: 'نظرة عامة على البلاغ',
     reporter: 'بيانات المُبلّغ',
     workflow: 'سير العمل',
@@ -163,7 +153,6 @@ const pageCopy: Record<AppLanguage, PageCopy> = {
     confirmedFraud: 'الاحتيال المؤكد',
     fraudDetails: 'تفاصيل الاحتيال',
     assignmentHistory: 'سجل التعيين',
-
     caseType: 'نوع البلاغ',
     insuranceType: 'نوع التأمين',
     suspectedAmount: 'المبلغ محل الاشتباه',
@@ -173,35 +162,29 @@ const pageCopy: Record<AppLanguage, PageCopy> = {
     closureReason: 'سبب الإغلاق',
     description: 'الوصف',
     attachmentsView: 'عرض المرفقات',
-
     email: 'البريد الإلكتروني',
     mobileNumber: 'رقم الجوال',
     nationalId: 'رقم الهوية / الإقامة',
-
     assignmentDate: 'تاريخ التعيين',
     assignedBy: 'تم التعيين بواسطة',
     reassignmentReason: 'سبب إعادة التعيين',
     caseStatus: 'حالة البلاغ',
     fraudUnitNotes: 'ملاحظات وحدة مكافحة الاحتيال',
-
     fraudIndicatorType: 'نوع مؤشر الاحتيال',
     indicatorDescription: 'وصف المؤشر',
     occurrenceCount: 'عدد مرات التكرار',
     fraudOfficerDecision: 'قرار موظف وحدة مكافحة الاحتيال',
-
     claimType: 'نوع المطالبة',
     fraudConfirmedDate: 'تاريخ ثبوت الاحتيال',
     fraudDetectionMethod: 'آلية اكتشاف الاحتيال',
     fraudAmount: 'المبلغ المرتبط بالاحتيال',
     actionTaken: 'الإجراء المتخذ',
     referredEntity: 'الجهة المحالة لها',
-
     unassigned: 'غير معيّن',
     notClosed: 'غير مغلق',
     notAvailable: 'غير متوفر',
     noAttachments: 'لا توجد مرفقات',
     noSupportingFiles: 'لا توجد ملفات داعمة مرفقة حتى الآن.',
-
     indicatorTypeOptions: [
       'مطالبات مكررة',
       'شذوذ في نمط الفوترة',
@@ -217,16 +200,7 @@ const pageCopy: Record<AppLanguage, PageCopy> = {
       'مرفوض',
       'إغلاق البلاغ',
     ],
-    statusOptions: [
-      'جديد',
-      'قيد المراجعة',
-      'قيد التحقيق',
-      'بانتظار معلومات',
-      'تم تأكيد الاحتيال',
-      'مرفوض',
-      'مغلق',
-    ],
-
+    statusOptions: ['جديد', 'قيد المراجعة', 'قيد التحقيق', 'بانتظار معلومات', 'تم تأكيد الاحتيال', 'مرفوض', 'مغلق'],
     historyAssignedTo: 'المستخدم المسؤول',
     historyDate: 'تاريخ التغيير',
     historyNotes: 'ملاحظات',
@@ -237,7 +211,6 @@ export default function CaseDetailsPage() {
   const { caseId } = useParams();
   const { language } = useOutletContext<{ language: AppLanguage }>();
   const item = fraudCases.find((entry) => entry.id === caseId) ?? fraudCases[0];
-
   const t = useMemo(() => pageCopy[language], [language]);
   const isArabic = language === 'ar';
 
@@ -278,32 +251,26 @@ export default function CaseDetailsPage() {
               <span className="muted small">{t.caseType}</span>
               <strong>{item.caseType}</strong>
             </div>
-
             <div className="case-metric">
               <span className="muted small">{t.insuranceType}</span>
               <strong>{item.insuranceType}</strong>
             </div>
-
             <div className="case-metric">
               <span className="muted small">{t.suspectedAmount}</span>
               <strong>{item.suspectedAmount}</strong>
             </div>
-
             <div className="case-metric">
               <span className="muted small">{t.entryDate}</span>
               <strong>{item.caseEntryDate}</strong>
             </div>
-
             <div className="case-metric">
               <span className="muted small">{t.assignedUser}</span>
               <strong>{item.assignedUser ?? t.unassigned}</strong>
             </div>
-
             <div className="case-metric">
               <span className="muted small">{t.closureDate}</span>
               <strong>{item.closureDate || t.notClosed}</strong>
             </div>
-
             <div className="case-metric">
               <span className="muted small">{t.closureReason}</span>
               <strong>{item.closureReason || t.notAvailable}</strong>
@@ -346,12 +313,10 @@ export default function CaseDetailsPage() {
               <span className="muted small">{t.email}</span>
               <strong>{item.reporterEmail}</strong>
             </div>
-
             <div>
               <span className="muted small">{t.mobileNumber}</span>
               <strong>{item.reporterMobile}</strong>
             </div>
-
             <div>
               <span className="muted small">{t.nationalId}</span>
               <strong>{item.nationalIdOrIqama}</strong>
@@ -393,7 +358,6 @@ export default function CaseDetailsPage() {
                   <span>{t.assignmentDate}</span>
                   <input defaultValue={item.assignmentDate} placeholder={t.assignmentDate} />
                 </label>
-
                 <label>
                   <span>{t.assignedBy}</span>
                   <input defaultValue={item.assignedBy} placeholder={t.assignedBy} />
@@ -462,27 +426,22 @@ export default function CaseDetailsPage() {
                 <span>{t.claimType}</span>
                 <input defaultValue={item.claimType} />
               </label>
-
               <label>
                 <span>{t.fraudConfirmedDate}</span>
                 <input type="date" defaultValue={item.fraudConfirmedDate} />
               </label>
-
               <label>
                 <span>{t.fraudDetectionMethod}</span>
                 <input defaultValue={item.fraudDetectionMethod} />
               </label>
-
               <label>
                 <span>{t.fraudAmount}</span>
                 <input defaultValue={item.fraudAmount} />
               </label>
-
               <label>
                 <span>{t.actionTaken}</span>
                 <input defaultValue={item.actionTaken} />
               </label>
-
               <label>
                 <span>{t.referredEntity}</span>
                 <input defaultValue={item.referredEntity} />
@@ -490,10 +449,7 @@ export default function CaseDetailsPage() {
             </div>
           </div>
 
-          <Table
-            title={t.assignmentHistory}
-            headers={[t.historyAssignedTo, t.historyDate, t.historyNotes]}
-          >
+          <Table title={t.assignmentHistory} headers={[t.historyAssignedTo, t.historyDate, t.historyNotes]}>
             {item.assignmentHistory.map((entry, index) => (
               <tr key={`${entry.changeDate}-${index}`}>
                 <td>{entry.newUser ?? t.unassigned}</td>
