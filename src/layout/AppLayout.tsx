@@ -1,6 +1,7 @@
 import { Link, NavLink, Outlet } from 'react-router-dom';
 import { useEffect, useMemo, useState } from 'react';
 
+
 export type AppLanguage = 'en' | 'ar';
 
 const copy: Record<
