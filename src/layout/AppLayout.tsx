@@ -3,7 +3,20 @@ import { useEffect, useMemo, useState } from 'react';
 
 export type AppLanguage = 'en' | 'ar';
 
-const copy = {
+const copy: Record<
+  AppLanguage,
+  {
+    brandTitle: string;
+    brandSubtitle: string;
+    dashboard: string;
+    queue: string;
+    caseDetails: string;
+    reports: string;
+    logout: string;
+    languageButton: string;
+    userAria: string;
+  }
+> = {
   en: {
     brandTitle: 'Fraud Management',
     brandSubtitle: 'Investigation command center',
