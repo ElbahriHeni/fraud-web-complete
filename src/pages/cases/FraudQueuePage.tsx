@@ -44,6 +44,7 @@ type QueueCopy = {
   searchValue: string;
   caseId: string;
   claimId: string;
+  caseType: string;
   reporterName: string;
   emailAddress: string;
   mobileNumber: string;
@@ -125,6 +126,7 @@ const pageCopy: Record<AppLanguage, QueueCopy> = {
     searchValue: 'Enter search value',
     caseId: 'Case Id',
     claimId: 'Claim Id',
+    caseType: 'Case Type',
     reporterName: 'Reporter Name',
     emailAddress: 'Email Address',
     mobileNumber: 'Mobile Number',
@@ -204,6 +206,7 @@ const pageCopy: Record<AppLanguage, QueueCopy> = {
     searchValue: 'أدخل قيمة البحث',
     caseId: 'رقم البلاغ',
     claimId: 'رقم المطالبة',
+    caseType: 'نوع البلاغ',
     reporterName: 'اسم المبلّغ',
     emailAddress: 'البريد الإلكتروني',
     mobileNumber: 'رقم الجوال',
@@ -379,7 +382,12 @@ export default function FraudQueuePage() {
 
       if (activeTab === 'unassigned' && item.assignedUser) return false;
       if (activeTab === 'assignedToMe' && item.assignedUser !== CURRENT_USER) return false;
-      if (activeTab === 'inProgress' && !['Under Review', 'Under Investigation', 'Pending Information'].includes(item.caseStatus)) return false;
+      if (
+        activeTab === 'inProgress' &&
+        !['Under Review', 'Under Investigation', 'Pending Information'].includes(item.caseStatus)
+      ) {
+        return false;
+      }
       if (activeTab === 'closed' && item.caseStatus !== 'Closed') return false;
 
       if (quickFilter === 'unassigned' && item.assignedUser) return false;
@@ -404,9 +412,21 @@ export default function FraudQueuePage() {
         reporterMobile: item.reporterMobile,
       };
 
-      return searchMap[searchField].toLowerCase().includes(normalizedSearch) || assignedValue.toLowerCase().includes(normalizedSearch);
+      return (
+        searchMap[searchField].toLowerCase().includes(normalizedSearch) ||
+        assignedValue.toLowerCase().includes(normalizedSearch)
+      );
     });
-  }, [activeTab, caseTypeFilter, dateRangeFilter, insuranceTypeFilter, quickFilter, searchField, searchValue, t.unassignedValue]);
+  }, [
+    activeTab,
+    caseTypeFilter,
+    dateRangeFilter,
+    insuranceTypeFilter,
+    quickFilter,
+    searchField,
+    searchValue,
+    t.unassignedValue,
+  ]);
 
   return (
     <div dir={isArabic ? 'rtl' : 'ltr'}>
@@ -416,11 +436,21 @@ export default function FraudQueuePage() {
         subtitle={t.subtitle}
         action={
           <div className="actions-inline" style={{ gap: 12, flexWrap: 'wrap' }}>
-            <button className="btn" type="button">{t.viewCases}</button>
-            <button className="btn" type="button">{t.assignToMe}</button>
-            <button className="btn" type="button">{t.reassign}</button>
-            <button className="btn" type="button">{t.releaseAssignment}</button>
-            <button className="btn primary" type="button">{t.export}</button>
+            <button className="btn" type="button">
+              {t.viewCases}
+            </button>
+            <button className="btn" type="button">
+              {t.assignToMe}
+            </button>
+            <button className="btn" type="button">
+              {t.reassign}
+            </button>
+            <button className="btn" type="button">
+              {t.releaseAssignment}
+            </button>
+            <button className="btn primary" type="button">
+              {t.export}
+            </button>
           </div>
         }
       />
@@ -451,7 +481,9 @@ export default function FraudQueuePage() {
 
         <select value={searchField} onChange={(event) => setSearchField(event.target.value as SearchField)}>
           {searchFieldOptions.map((option) => (
-            <option key={option.value} value={option.value}>{option.label}</option>
+            <option key={option.value} value={option.value}>
+              {option.label}
+            </option>
           ))}
         </select>
 
@@ -554,15 +586,25 @@ export default function FraudQueuePage() {
                     {t.openCase}
                   </Link>
                   {!item.assignedUser ? (
-                    <button className="mini-btn" type="button">{t.assignToMe}</button>
+                    <button className="mini-btn" type="button">
+                      {t.assignToMe}
+                    </button>
                   ) : (
                     <>
-                      <button className="mini-btn" type="button">{t.reassign}</button>
-                      <button className="mini-btn" type="button">{t.releaseAssignment}</button>
+                      <button className="mini-btn" type="button">
+                        {t.reassign}
+                      </button>
+                      <button className="mini-btn" type="button">
+                        {t.releaseAssignment}
+                      </button>
                     </>
                   )}
-                  <button className="mini-btn" type="button">{t.updateStatus}</button>
-                  <button className="mini-btn" type="button">{t.addNote}</button>
+                  <button className="mini-btn" type="button">
+                    {t.updateStatus}
+                  </button>
+                  <button className="mini-btn" type="button">
+                    {t.addNote}
+                  </button>
                 </div>
               </td>
             </tr>
