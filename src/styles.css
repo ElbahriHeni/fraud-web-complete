@@ -1098,7 +1098,9 @@ label span {
 .app-shell.rtl .nav-links a,
 .app-shell.rtl .page-header,
 .app-shell.rtl .case-overview-top,
-.app-shell.rtl .table-title-row {
+.app-shell.rtl .table-title-row,
+.app-shell.rtl .dashboard-summary-header,
+.app-shell.rtl .chart-card-header {
   direction: rtl;
 }
 
@@ -1123,6 +1125,14 @@ label span {
 
 .app-shell.rtl .actions-inline {
   flex-direction: row-reverse;
+}
+
+.app-shell.rtl .brand {
+  flex-direction: row-reverse;
+}
+
+.app-shell.rtl .nav-links a {
+  justify-content: flex-start;
 }
 
 .compact-reporter-card {
