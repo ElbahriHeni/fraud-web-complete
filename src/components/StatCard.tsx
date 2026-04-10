@@ -2,7 +2,11 @@ import { KpiCard } from '../types';
 
 const cardIcons = ['A', 'N', 'I', 'C', 'Q', 'H'];
 
-export default function StatCard({ title, value, subtitle }: KpiCard) {
+interface StatCardProps extends KpiCard {
+  trendLabel?: string;
+}
+
+export default function StatCard({ title, value, subtitle, trendLabel = 'Live workload snapshot' }: StatCardProps) {
   const icon = cardIcons[title.length % cardIcons.length];
 
   return (
@@ -13,7 +17,7 @@ export default function StatCard({ title, value, subtitle }: KpiCard) {
       </div>
       <div className="stat-value">{value}</div>
       {subtitle ? <div className="muted small">{subtitle}</div> : null}
-      <div className="stat-trend">Live workload snapshot</div>
+      <div className="stat-trend">{trendLabel}</div>
     </div>
   );
 }
