@@ -1087,21 +1087,16 @@ label span {
   margin-top: 18px;
 }
 
-/* RTL layout only for Arabic */
 .app-shell.rtl {
   grid-template-columns: minmax(0, 1fr) 290px;
-  direction: rtl;
 }
 
 .app-shell.rtl .sidebar {
-  grid-column: 2;
-  grid-row: 1;
-  text-align: right;
+  order: 2;
 }
 
 .app-shell.rtl .main-content {
-  grid-column: 1;
-  grid-row: 1;
+  order: 1;
 }
 
 .app-shell.rtl .brand,
@@ -1110,11 +1105,7 @@ label span {
 .app-shell.rtl .case-overview-top,
 .app-shell.rtl .table-title-row,
 .app-shell.rtl .dashboard-summary-header,
-.app-shell.rtl .chart-card-header,
-.app-shell.rtl .card,
-.app-shell.rtl .form-grid,
-.app-shell.rtl .case-contact-list,
-.app-shell.rtl .case-metric-grid {
+.app-shell.rtl .chart-card-header {
   direction: rtl;
 }
 
@@ -1145,25 +1136,8 @@ label span {
   flex-direction: row-reverse;
 }
 
-.app-shell.rtl .brand-copy {
-  text-align: right;
-}
-
 .app-shell.rtl .nav-links a {
-  justify-content: flex-end;
-  text-align: right;
-}
-
-.app-shell.rtl .case-contact-list > div,
-.app-shell.rtl .case-metric,
-.app-shell.rtl label span,
-.app-shell.rtl .activity-item,
-.app-shell.rtl .muted,
-.app-shell.rtl h1,
-.app-shell.rtl h2,
-.app-shell.rtl h3,
-.app-shell.rtl p {
-  text-align: right;
+  justify-content: flex-start;
 }
 
 .compact-reporter-card {
@@ -1218,8 +1192,7 @@ label span {
 
   .app-shell.rtl .sidebar,
   .app-shell.rtl .main-content {
-    grid-column: auto;
-    grid-row: auto;
+    order: initial;
   }
 }
 
