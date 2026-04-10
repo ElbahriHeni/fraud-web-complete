@@ -1082,6 +1082,73 @@ label span {
   margin-top: 18px;
 }
 
+.app-shell.rtl {
+  grid-template-columns: minmax(0, 1fr) 290px;
+}
+
+.app-shell.rtl .sidebar {
+  order: 2;
+}
+
+.app-shell.rtl .main-content {
+  order: 1;
+}
+
+.app-shell.rtl .brand,
+.app-shell.rtl .nav-links a,
+.app-shell.rtl .page-header,
+.app-shell.rtl .case-overview-top,
+.app-shell.rtl .table-title-row {
+  direction: rtl;
+}
+
+.app-shell.rtl .topbar-controls {
+  margin-left: 0;
+  margin-right: auto;
+}
+
+.app-shell.rtl th,
+.app-shell.rtl td {
+  text-align: right;
+}
+
+.app-shell.rtl .page-header,
+.app-shell.rtl .dashboard-summary-header,
+.app-shell.rtl .chart-card-header,
+.app-shell.rtl .table-title-row,
+.app-shell.rtl .topbar,
+.app-shell.rtl .case-overview-top {
+  flex-direction: row-reverse;
+}
+
+.app-shell.rtl .actions-inline {
+  flex-direction: row-reverse;
+}
+
+.compact-reporter-card {
+  gap: 12px;
+}
+
+.case-contact-list.compact {
+  gap: 10px;
+}
+
+.case-contact-list.compact > div {
+  padding: 12px 14px;
+  gap: 4px;
+}
+
+.case-overview-card textarea:disabled {
+  color: var(--text);
+  background: rgba(245, 247, 250, 0.95);
+  cursor: not-allowed;
+  opacity: 1;
+}
+
+.topbar .btn {
+  white-space: nowrap;
+}
+
 @media (max-width: 1200px) {
   .dashboard-overview,
   .dashboard-hero,
@@ -1100,6 +1167,17 @@ label span {
 
   .filters-row {
     grid-template-columns: 1fr 1fr;
+  }
+}
+
+@media (max-width: 1100px) {
+  .app-shell.rtl {
+    grid-template-columns: 1fr;
+  }
+
+  .app-shell.rtl .sidebar,
+  .app-shell.rtl .main-content {
+    order: initial;
   }
 }
 
