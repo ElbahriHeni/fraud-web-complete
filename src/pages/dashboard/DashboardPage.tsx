@@ -62,8 +62,8 @@ type DashboardCopy = {
   recentAnalystMovement: string;
   teamPerformance: string;
   teamPerformanceSubtitle: string;
-  closedCasesLabel: string;
-  avgPerCaseLabel: string;
+  casesClosedLabel: string;
+  avgTimeLabel: string;
 
   averageCaseProcessingTime: string;
   averageCaseProcessingTimeSubtitle: string;
@@ -178,9 +178,9 @@ const pageCopy: Record<AppLanguage, DashboardCopy> = {
     teamActivity: 'Team Activity',
     recentAnalystMovement: 'Recent analyst movement',
     teamPerformance: 'Team Performance',
-    teamPerformanceSubtitle: 'Closed cases and average handling time by analyst.',
-    closedCasesLabel: 'Closed Cases',
-    avgPerCaseLabel: 'Avg / Case',
+    teamPerformanceSubtitle: 'Closed cases by analyst with average time per case shown inside each bar.',
+    casesClosedLabel: 'Cases Closed',
+    avgTimeLabel: 'Avg Time',
 
     averageCaseProcessingTime: 'Average Case Processing Time',
     averageCaseProcessingTimeSubtitle: 'Average elapsed handling time for fraud cases.',
@@ -292,9 +292,9 @@ const pageCopy: Record<AppLanguage, DashboardCopy> = {
     teamActivity: 'أداء الفريق',
     recentAnalystMovement: 'آخر تحركات المحللين',
     teamPerformance: 'أداء أعضاء الفريق',
-    teamPerformanceSubtitle: 'عدد البلاغات المغلقة ومتوسط زمن المعالجة لكل عضو.',
-    closedCasesLabel: 'البلاغات المغلقة',
-    avgPerCaseLabel: 'متوسط / بلاغ',
+    teamPerformanceSubtitle: 'عدد البلاغات المغلقة لكل محلل مع متوسط الزمن داخل كل شريط.',
+    casesClosedLabel: 'البلاغات المغلقة',
+    avgTimeLabel: 'متوسط الزمن',
 
     averageCaseProcessingTime: 'متوسط زمن معالجة البلاغ',
     averageCaseProcessingTimeSubtitle: 'متوسط الزمن المستغرق لمعالجة بلاغات الاحتيال.',
@@ -431,11 +431,28 @@ export default function DashboardPage() {
 
   const teamPerformanceData = useMemo(
     () => [
-      { name: language === 'ar' ? 'فاطمة سالم' : 'Fatimah Salem', closedCases: 12, avgDays: language === 'ar' ? '4.2 أيام' : '4.2 days' },
-      { name: language === 'ar' ? 'محمد حسن' : 'Mohammed Hassan', closedCases: 9, avgDays: language === 'ar' ? '5.1 أيام' : '5.1 days' },
-      { name: language === 'ar' ? 'نورة خالد' : 'Noura Khaled', closedCases: 7, avgDays: language === 'ar' ? '6.0 أيام' : '6.0 days' },
+      {
+        name: language === 'ar' ? 'فاطمة سالم' : 'Fatimah Salem',
+        casesClosed: 12,
+        avgTime: language === 'ar' ? '4.2 أيام' : '4.2 days',
+      },
+      {
+        name: language === 'ar' ? 'محمد حسن' : 'Mohammed Hassan',
+        casesClosed: 9,
+        avgTime: language === 'ar' ? '5.1 أيام' : '5.1 days',
+      },
+      {
+        name: language === 'ar' ? 'نورة خالد' : 'Noura Khaled',
+        casesClosed: 7,
+        avgTime: language === 'ar' ? '6.0 أيام' : '6.0 days',
+      },
     ],
     [language]
+  );
+
+  const maxClosedCases = useMemo(
+    () => Math.max(...teamPerformanceData.map((item) => item.casesClosed), 1),
+    [teamPerformanceData]
   );
 
   const translatePriority = (value: string) => {
@@ -626,17 +643,53 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        <div className="card">
-          <span className="eyebrow">{t.teamPerformance}</span>
-          <h3>{t.teamPerformance}</h3>
-          <p className="muted">{t.teamPerformanceSubtitle}</p>
+        <div className="card chart-card">
+          <div className="chart-card-header">
+            <div>
+              <h3>{t.teamPerformance}</h3>
+              <p className="muted">{t.teamPerformanceSubtitle}</p>
+            </div>
+          </div>
 
-          <div className="activity-list">
+          <div className="bars">
             {teamPerformanceData.map((member) => (
-              <div className="activity-item" key={member.name}>
-                <strong>{member.name}</strong>
-                <span>
-                  {t.closedCasesLabel}: {member.closedCases} • {t.avgPerCaseLabel}: {member.avgDays}
+              <div key={member.name}>
+                <span className="bar-label">
+                  <span>{member.name}</span>
+                  <span>{member.casesClosed}</span>
+                </span>
+                <div
+                  style={{
+                    position: 'relative',
+                    width: '100%',
+                    height: 18,
+                    background: 'rgba(15, 23, 42, 0.08)',
+                    borderRadius: 999,
+                    overflow: 'hidden',
+                  }}
+                >
+                  <div
+                    style={{
+                      width: `${(member.casesClosed / maxClosedCases) * 100}%`,
+                      height: '100%',
+                      background: 'linear-gradient(90deg, rgba(13,108,104,0.9), rgba(13,108,104,0.55))',
+                      borderRadius: 999,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: isArabic ? 'flex-start' : 'flex-end',
+                      paddingInline: 10,
+                      color: 'white',
+                      fontSize: 12,
+                      fontWeight: 600,
+                      minWidth: 90,
+                      boxSizing: 'border-box',
+                    }}
+                  >
+                    {member.avgTime}
+                  </div>
+                </div>
+                <span className="muted small" style={{ display: 'block', marginTop: 6 }}>
+                  {t.casesClosedLabel}: {member.casesClosed} • {t.avgTimeLabel}: {member.avgTime}
                 </span>
               </div>
             ))}
