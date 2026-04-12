@@ -60,6 +60,17 @@ type DashboardCopy = {
 
   teamActivity: string;
   recentAnalystMovement: string;
+  teamPerformance: string;
+  teamPerformanceSubtitle: string;
+  averageCaseProcessingTime: string;
+  averageCaseProcessingTimeSubtitle: string;
+  avgProcessingTimeValue: string;
+  thisWeek: string;
+  thisMonth: string;
+  highPriorityProcessing: string;
+  thisWeekValue: string;
+  thisMonthValue: string;
+  highPriorityProcessingValue: string;
 
   recentCases: string;
   recentCasesSubtitle: string;
@@ -163,6 +174,17 @@ const pageCopy: Record<AppLanguage, DashboardCopy> = {
 
     teamActivity: 'Team Activity',
     recentAnalystMovement: 'Recent analyst movement',
+    teamPerformance: 'Team Performance',
+    teamPerformanceSubtitle: 'Team workload and case handling distribution.',
+    averageCaseProcessingTime: 'Average Case Processing Time',
+    averageCaseProcessingTimeSubtitle: 'Average elapsed handling time for fraud cases.',
+    avgProcessingTimeValue: '5.2 days',
+    thisWeek: 'This Week',
+    thisMonth: 'This Month',
+    highPriorityProcessing: 'High Priority Cases',
+    thisWeekValue: '4.8 days',
+    thisMonthValue: '5.2 days',
+    highPriorityProcessingValue: '3.1 days',
 
     recentCases: 'Recent Cases',
     recentCasesSubtitle: 'Quick snapshot from the shared queue.',
@@ -263,6 +285,17 @@ const pageCopy: Record<AppLanguage, DashboardCopy> = {
 
     teamActivity: 'أداء أعضاء الفريق',
     recentAnalystMovement: 'آخر تحركات المحللين',
+    teamPerformance: 'أداء أعضاء الفريق',
+    teamPerformanceSubtitle: 'عبء العمل وتوزيع معالجة البلاغات بين أعضاء الفريق.',
+    averageCaseProcessingTime: 'متوسط زمن معالجة البلاغ',
+    averageCaseProcessingTimeSubtitle: 'متوسط الزمن المستغرق لمعالجة بلاغات الاحتيال.',
+    avgProcessingTimeValue: '5.2 أيام',
+    thisWeek: 'هذا الأسبوع',
+    thisMonth: 'هذا الشهر',
+    highPriorityProcessing: 'البلاغات عالية الأولوية',
+    thisWeekValue: '4.8 أيام',
+    thisMonthValue: '5.2 أيام',
+    highPriorityProcessingValue: '3.1 أيام',
 
     recentCases: 'البلاغات الحديثة',
     recentCasesSubtitle: 'عرض سريع لأحدث البلاغات في القائمة المشتركة.',
@@ -369,6 +402,15 @@ export default function DashboardPage() {
     [t]
   );
 
+  const processingTimeData = useMemo(
+    () => [
+      { label: t.thisWeek, value: t.thisWeekValue, progress: 48, max: 100 },
+      { label: t.thisMonth, value: t.thisMonthValue, progress: 52, max: 100 },
+      { label: t.highPriorityProcessing, value: t.highPriorityProcessingValue, progress: 31, max: 100 },
+    ],
+    [t]
+  );
+
   const activityList = useMemo(
     () => [
       { name: t.activity1Name, text: t.activity1Text },
@@ -457,11 +499,7 @@ export default function DashboardPage() {
 
       <div className="card-grid">
         {cards.map((card) => (
-          <StatCard
-            key={card.title}
-            {...card}
-            trendLabel={t.liveWorkloadSnapshot}
-          />
+          <StatCard key={card.title} {...card} trendLabel={t.liveWorkloadSnapshot} />
         ))}
       </div>
 
@@ -558,7 +596,8 @@ export default function DashboardPage() {
       <div className="two-col">
         <div className="card">
           <span className="eyebrow">{t.teamActivity}</span>
-          <h3>{t.recentAnalystMovement}</h3>
+          <h3>{t.teamPerformance}</h3>
+          <p className="muted">{t.teamPerformanceSubtitle}</p>
 
           <div className="activity-list">
             {activityList.map((activity) => (
@@ -569,13 +608,31 @@ export default function DashboardPage() {
             ))}
           </div>
         </div>
+
+        <div className="card chart-card">
+          <div className="chart-card-header">
+            <div>
+              <h3>{t.averageCaseProcessingTime}</h3>
+              <p className="muted">{t.averageCaseProcessingTimeSubtitle}</p>
+            </div>
+            <span className="badge medium">{t.avgProcessingTimeValue}</span>
+          </div>
+
+          <div className="bars">
+            {processingTimeData.map((item) => (
+              <div key={item.label}>
+                <span className="bar-label">
+                  <span>{item.label}</span>
+                  <span>{item.value}</span>
+                </span>
+                <progress value={item.progress} max={item.max} />
+              </div>
+            ))}
+          </div>
+        </div>
       </div>
 
-      <PageHeader
-        eyebrow={t.eyebrow}
-        title={t.recentCases}
-        subtitle={t.recentCasesSubtitle}
-      />
+      <PageHeader eyebrow={t.eyebrow} title={t.recentCases} subtitle={t.recentCasesSubtitle} />
 
       <Table
         title={t.recentCasesTableTitle}
