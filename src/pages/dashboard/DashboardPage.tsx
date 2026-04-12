@@ -62,6 +62,9 @@ type DashboardCopy = {
   recentAnalystMovement: string;
   teamPerformance: string;
   teamPerformanceSubtitle: string;
+  closedCasesLabel: string;
+  avgPerCaseLabel: string;
+
   averageCaseProcessingTime: string;
   averageCaseProcessingTimeSubtitle: string;
   avgProcessingTimeValue: string;
@@ -175,7 +178,10 @@ const pageCopy: Record<AppLanguage, DashboardCopy> = {
     teamActivity: 'Team Activity',
     recentAnalystMovement: 'Recent analyst movement',
     teamPerformance: 'Team Performance',
-    teamPerformanceSubtitle: 'Team workload and case handling distribution.',
+    teamPerformanceSubtitle: 'Closed cases and average handling time by analyst.',
+    closedCasesLabel: 'Closed Cases',
+    avgPerCaseLabel: 'Avg / Case',
+
     averageCaseProcessingTime: 'Average Case Processing Time',
     averageCaseProcessingTimeSubtitle: 'Average elapsed handling time for fraud cases.',
     avgProcessingTimeValue: '5.2 days',
@@ -283,10 +289,13 @@ const pageCopy: Record<AppLanguage, DashboardCopy> = {
     casesByCaseType: 'البلاغات حسب نوع البلاغ',
     casesByCaseTypeSubtitle: 'مزيج البلاغات حسب فئة الإبلاغ عن الاحتيال.',
 
-    teamActivity: 'أداء أعضاء الفريق',
+    teamActivity: 'أداء الفريق',
     recentAnalystMovement: 'آخر تحركات المحللين',
     teamPerformance: 'أداء أعضاء الفريق',
-    teamPerformanceSubtitle: 'عبء العمل وتوزيع معالجة البلاغات بين أعضاء الفريق.',
+    teamPerformanceSubtitle: 'عدد البلاغات المغلقة ومتوسط زمن المعالجة لكل عضو.',
+    closedCasesLabel: 'البلاغات المغلقة',
+    avgPerCaseLabel: 'متوسط / بلاغ',
+
     averageCaseProcessingTime: 'متوسط زمن معالجة البلاغ',
     averageCaseProcessingTimeSubtitle: 'متوسط الزمن المستغرق لمعالجة بلاغات الاحتيال.',
     avgProcessingTimeValue: '5.2 أيام',
@@ -418,6 +427,15 @@ export default function DashboardPage() {
       { name: t.activity3Name, text: t.activity3Text },
     ],
     [t]
+  );
+
+  const teamPerformanceData = useMemo(
+    () => [
+      { name: language === 'ar' ? 'فاطمة سالم' : 'Fatimah Salem', closedCases: 12, avgDays: language === 'ar' ? '4.2 أيام' : '4.2 days' },
+      { name: language === 'ar' ? 'محمد حسن' : 'Mohammed Hassan', closedCases: 9, avgDays: language === 'ar' ? '5.1 أيام' : '5.1 days' },
+      { name: language === 'ar' ? 'نورة خالد' : 'Noura Khaled', closedCases: 7, avgDays: language === 'ar' ? '6.0 أيام' : '6.0 days' },
+    ],
+    [language]
   );
 
   const translatePriority = (value: string) => {
@@ -596,8 +614,7 @@ export default function DashboardPage() {
       <div className="two-col">
         <div className="card">
           <span className="eyebrow">{t.teamActivity}</span>
-          <h3>{t.teamPerformance}</h3>
-          <p className="muted">{t.teamPerformanceSubtitle}</p>
+          <h3>{t.recentAnalystMovement}</h3>
 
           <div className="activity-list">
             {activityList.map((activity) => (
@@ -609,6 +626,25 @@ export default function DashboardPage() {
           </div>
         </div>
 
+        <div className="card">
+          <span className="eyebrow">{t.teamPerformance}</span>
+          <h3>{t.teamPerformance}</h3>
+          <p className="muted">{t.teamPerformanceSubtitle}</p>
+
+          <div className="activity-list">
+            {teamPerformanceData.map((member) => (
+              <div className="activity-item" key={member.name}>
+                <strong>{member.name}</strong>
+                <span>
+                  {t.closedCasesLabel}: {member.closedCases} • {t.avgPerCaseLabel}: {member.avgDays}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      <div className="two-col">
         <div className="card chart-card">
           <div className="chart-card-header">
             <div>
