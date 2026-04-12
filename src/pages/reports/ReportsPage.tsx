@@ -1,5 +1,5 @@
-import { Link, useMemo, useState } from 'react';
-import { useOutletContext } from 'react-router-dom';
+import { useMemo, useState } from 'react';
+import { Link, useOutletContext } from 'react-router-dom';
 import PageHeader from '../../components/PageHeader';
 import { reports } from '../../data/mockData';
 import type { AppLanguage } from '../../layout/AppLayout';
@@ -94,11 +94,7 @@ export default function ReportsPage() {
 
   return (
     <div dir={isArabic ? 'rtl' : 'ltr'}>
-      <PageHeader
-        eyebrow={t.eyebrow}
-        title={t.title}
-        subtitle={t.subtitle}
-      />
+      <PageHeader eyebrow={t.eyebrow} title={t.title} subtitle={t.subtitle} />
 
       <div className="card reports-filter">
         <input
