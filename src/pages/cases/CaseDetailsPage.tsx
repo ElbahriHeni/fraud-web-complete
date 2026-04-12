@@ -22,6 +22,8 @@ type PageCopy = {
   confirmedFraud: string;
   fraudDetails: string;
   assignmentHistory: string;
+  caseId: string;
+  claimId: string;
   caseType: string;
   insuranceType: string;
   suspectedAmount: string;
@@ -49,6 +51,7 @@ type PageCopy = {
   fraudAmount: string;
   actionTaken: string;
   referredEntity: string;
+  caseSource: string;
   unassigned: string;
   notClosed: string;
   notAvailable: string;
@@ -82,6 +85,8 @@ const pageCopy: Record<AppLanguage, PageCopy> = {
     confirmedFraud: 'Confirmed Fraud',
     fraudDetails: 'Fraud Details',
     assignmentHistory: 'Assignment History',
+    caseId: 'Case Id',
+    claimId: 'Claim Id',
     caseType: 'Case Type',
     insuranceType: 'Insurance Type',
     suspectedAmount: 'Suspected Amount',
@@ -109,6 +114,7 @@ const pageCopy: Record<AppLanguage, PageCopy> = {
     fraudAmount: 'Fraud Amount',
     actionTaken: 'Action Taken',
     referredEntity: 'Referred Entity',
+    caseSource: 'Case Source',
     unassigned: 'Unassigned',
     notClosed: 'Not Closed',
     notAvailable: 'Not Available',
@@ -161,6 +167,8 @@ const pageCopy: Record<AppLanguage, PageCopy> = {
     confirmedFraud: 'الاحتيال المؤكد',
     fraudDetails: 'تفاصيل الاحتيال',
     assignmentHistory: 'سجل التعيين',
+    caseId: 'رقم البلاغ',
+    claimId: 'رقم المطالبة',
     caseType: 'نوع البلاغ',
     insuranceType: 'نوع التأمين',
     suspectedAmount: 'المبلغ محل الاشتباه',
@@ -188,6 +196,7 @@ const pageCopy: Record<AppLanguage, PageCopy> = {
     fraudAmount: 'المبلغ المرتبط بالاحتيال',
     actionTaken: 'الإجراء المتخذ',
     referredEntity: 'الجهة المحالة لها',
+    caseSource: 'طريقة استقبال البلاغ',
     unassigned: 'غير معيّن',
     notClosed: 'غير مغلق',
     notAvailable: 'غير متوفر',
@@ -289,15 +298,15 @@ export default function CaseDetailsPage() {
                 <div className="form-grid single">
                   <label>
                     <span>{t.caseId}</span>
-                    <input defaultValue={item.id} placeholder={t.caseId} />
+                    <input defaultValue={item.id ?? ''} placeholder={t.caseId} />
                   </label>
                   <label>
                     <span>{t.claimId}</span>
-                    <input defaultValue={item.claimId} placeholder={t.claimId} />
+                    <input defaultValue={item.claimId ?? ''} placeholder={t.claimId} />
                   </label>
                   <label>
-                    <span>Case Source</span>
-                    <input defaultValue={item.caseSource} placeholder="Case Source" />
+                    <span>{t.caseSource}</span>
+                    <input defaultValue={item.caseSource ?? ''} placeholder={t.caseSource} />
                   </label>
                 </div>
               ) : (
@@ -312,7 +321,7 @@ export default function CaseDetailsPage() {
 
             {!isNewCase ? (
               <div className="actions-inline">
-                <span className={`badge ${item.priorityLevel.toLowerCase()}`}>{item.priorityLevel}</span>
+                <span className={`badge ${String(item.priorityLevel).toLowerCase()}`}>{item.priorityLevel}</span>
                 <span className="case-status-pill">{item.caseStatus}</span>
               </div>
             ) : null}
@@ -322,7 +331,7 @@ export default function CaseDetailsPage() {
             <div className="case-metric">
               <span className="muted small">{t.caseType}</span>
               {isNewCase ? (
-                <input defaultValue={item.caseType} placeholder={t.caseType} />
+                <input defaultValue={item.caseType ?? ''} placeholder={t.caseType} />
               ) : (
                 <strong>{item.caseType}</strong>
               )}
@@ -330,7 +339,7 @@ export default function CaseDetailsPage() {
             <div className="case-metric">
               <span className="muted small">{t.insuranceType}</span>
               {isNewCase ? (
-                <input defaultValue={item.insuranceType} placeholder={t.insuranceType} />
+                <input defaultValue={item.insuranceType ?? ''} placeholder={t.insuranceType} />
               ) : (
                 <strong>{item.insuranceType}</strong>
               )}
@@ -338,7 +347,7 @@ export default function CaseDetailsPage() {
             <div className="case-metric">
               <span className="muted small">{t.suspectedAmount}</span>
               {isNewCase ? (
-                <input defaultValue={item.suspectedAmount} placeholder={t.suspectedAmount} />
+                <input defaultValue={item.suspectedAmount ?? ''} placeholder={t.suspectedAmount} />
               ) : (
                 <strong>{item.suspectedAmount}</strong>
               )}
@@ -346,7 +355,7 @@ export default function CaseDetailsPage() {
             <div className="case-metric">
               <span className="muted small">{t.entryDate}</span>
               {isNewCase ? (
-                <input type="date" defaultValue={item.caseEntryDate} />
+                <input type="date" defaultValue={item.caseEntryDate ?? ''} />
               ) : (
                 <strong>{item.caseEntryDate}</strong>
               )}
@@ -354,7 +363,7 @@ export default function CaseDetailsPage() {
             <div className="case-metric">
               <span className="muted small">{t.assignedUser}</span>
               {isNewCase ? (
-                <select defaultValue={item.assignedUser}>
+                <select defaultValue={item.assignedUser ?? ''}>
                   <option value="">{t.unassigned}</option>
                   {users
                     .filter((u) => u.role === 'Fraud Team Member')
@@ -369,7 +378,7 @@ export default function CaseDetailsPage() {
             <div className="case-metric">
               <span className="muted small">{t.closureDate}</span>
               {isNewCase ? (
-                <input type="date" defaultValue={item.closureDate} />
+                <input type="date" defaultValue={item.closureDate ?? ''} />
               ) : (
                 <strong>{item.closureDate || t.notClosed}</strong>
               )}
@@ -377,7 +386,7 @@ export default function CaseDetailsPage() {
             <div className="case-metric">
               <span className="muted small">{t.closureReason}</span>
               {isNewCase ? (
-                <input defaultValue={item.closureReason} placeholder={t.closureReason} />
+                <input defaultValue={item.closureReason ?? ''} placeholder={t.closureReason} />
               ) : (
                 <strong>{item.closureReason || t.notAvailable}</strong>
               )}
@@ -387,7 +396,7 @@ export default function CaseDetailsPage() {
           <div className="form-grid single top-gap">
             <label>
               <span>{t.description}</span>
-              <textarea defaultValue={item.submissionDetails} rows={5} />
+              <textarea defaultValue={item.submissionDetails ?? ''} rows={5} />
             </label>
 
             <div>
@@ -417,19 +426,19 @@ export default function CaseDetailsPage() {
             <div className="form-grid single">
               <label>
                 <span>{t.reporter}</span>
-                <input defaultValue={item.reporterName} placeholder={t.reporter} />
+                <input defaultValue={item.reporterName ?? ''} placeholder={t.reporter} />
               </label>
               <label>
                 <span>{t.email}</span>
-                <input defaultValue={item.reporterEmail} placeholder={t.email} />
+                <input defaultValue={item.reporterEmail ?? ''} placeholder={t.email} />
               </label>
               <label>
                 <span>{t.mobileNumber}</span>
-                <input defaultValue={item.reporterMobile} placeholder={t.mobileNumber} />
+                <input defaultValue={item.reporterMobile ?? ''} placeholder={t.mobileNumber} />
               </label>
               <label>
                 <span>{t.nationalId}</span>
-                <input defaultValue={item.nationalIdOrIqama} placeholder={t.nationalId} />
+                <input defaultValue={item.nationalIdOrIqama ?? ''} placeholder={t.nationalId} />
               </label>
             </div>
           ) : (
@@ -476,7 +485,7 @@ export default function CaseDetailsPage() {
 
               <label>
                 <span>{t.caseStatus}</span>
-                <select defaultValue={item.caseStatus}>
+                <select defaultValue={item.caseStatus ?? ''}>
                   {t.statusOptions.map((status: string) => (
                     <option key={status}>{status}</option>
                   ))}
@@ -486,22 +495,22 @@ export default function CaseDetailsPage() {
               <div className="two-col-form form-grid">
                 <label>
                   <span>{t.assignmentDate}</span>
-                  <input defaultValue={item.assignmentDate} placeholder={t.assignmentDate} />
+                  <input defaultValue={item.assignmentDate ?? ''} placeholder={t.assignmentDate} />
                 </label>
                 <label>
                   <span>{t.assignedBy}</span>
-                  <input defaultValue={item.assignedBy} placeholder={t.assignedBy} />
+                  <input defaultValue={item.assignedBy ?? ''} placeholder={t.assignedBy} />
                 </label>
               </div>
 
               <label>
                 <span>{t.reassignmentReason}</span>
-                <input defaultValue={item.reassignmentReason} placeholder={t.reassignmentReason} />
+                <input defaultValue={item.reassignmentReason ?? ''} placeholder={t.reassignmentReason} />
               </label>
 
               <label>
                 <span>{t.fraudUnitNotes}</span>
-                <textarea defaultValue={item.fraudUnitNotes} rows={6} />
+                <textarea defaultValue={item.fraudUnitNotes ?? ''} rows={6} />
               </label>
 
               <div className="actions-inline">
@@ -517,7 +526,7 @@ export default function CaseDetailsPage() {
             <div className="form-grid single">
               <label>
                 <span>{t.fraudIndicatorType}</span>
-                <select defaultValue={item.fraudIndicator.fraudIndicatorType}>
+                <select defaultValue={item.fraudIndicator.fraudIndicatorType ?? ''}>
                   <option value=""></option>
                   {t.indicatorTypeOptions.map((option: string) => (
                     <option key={option}>{option}</option>
@@ -527,17 +536,17 @@ export default function CaseDetailsPage() {
 
               <label>
                 <span>{t.indicatorDescription}</span>
-                <textarea rows={4} defaultValue={item.fraudIndicator.indicatorDescription} />
+                <textarea rows={4} defaultValue={item.fraudIndicator.indicatorDescription ?? ''} />
               </label>
 
               <label>
                 <span>{t.occurrenceCount}</span>
-                <input defaultValue={String(item.fraudIndicator.occurrenceCount || '')} />
+                <input defaultValue={String(item.fraudIndicator.occurrenceCount ?? '')} />
               </label>
 
               <label>
                 <span>{t.fraudOfficerDecision}</span>
-                <select defaultValue={item.fraudIndicator.fraudOfficerDecision}>
+                <select defaultValue={item.fraudIndicator.fraudOfficerDecision ?? ''}>
                   <option value=""></option>
                   {t.decisionOptions.map((option: string) => (
                     <option key={option}>{option}</option>
@@ -556,27 +565,27 @@ export default function CaseDetailsPage() {
             <div className="form-grid single">
               <label>
                 <span>{t.claimType}</span>
-                <input defaultValue={item.claimType} />
+                <input defaultValue={item.claimType ?? ''} />
               </label>
               <label>
                 <span>{t.fraudConfirmedDate}</span>
-                <input type="date" defaultValue={item.fraudConfirmedDate} />
+                <input type="date" defaultValue={item.fraudConfirmedDate ?? ''} />
               </label>
               <label>
                 <span>{t.fraudDetectionMethod}</span>
-                <input defaultValue={item.fraudDetectionMethod} />
+                <input defaultValue={item.fraudDetectionMethod ?? ''} />
               </label>
               <label>
                 <span>{t.fraudAmount}</span>
-                <input defaultValue={item.fraudAmount} />
+                <input defaultValue={item.fraudAmount ?? ''} />
               </label>
               <label>
                 <span>{t.actionTaken}</span>
-                <input defaultValue={item.actionTaken} />
+                <input defaultValue={item.actionTaken ?? ''} />
               </label>
               <label>
                 <span>{t.referredEntity}</span>
-                <input defaultValue={item.referredEntity} />
+                <input defaultValue={item.referredEntity ?? ''} />
               </label>
             </div>
           </div>
