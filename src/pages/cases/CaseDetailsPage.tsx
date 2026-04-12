@@ -7,7 +7,9 @@ import type { AppLanguage } from '../../layout/AppLayout';
 
 type PageCopy = {
   title: string;
+  titleNew: string;
   subtitle: string;
+  subtitleNew: string;
   claim: string;
   releaseAssignment: string;
   saveChanges: string;
@@ -52,6 +54,7 @@ type PageCopy = {
   notAvailable: string;
   noAttachments: string;
   noSupportingFiles: string;
+  noHistory: string;
   indicatorTypeOptions: string[];
   decisionOptions: string[];
   statusOptions: string[];
@@ -63,8 +66,10 @@ type PageCopy = {
 const pageCopy: Record<AppLanguage, PageCopy> = {
   en: {
     title: 'Case Details',
+    titleNew: 'New Case',
     subtitle:
       'Review the case overview first, then update workflow, indicators, and confirmed fraud details.',
+    subtitleNew: 'Create a new fraud case by entering all details below.',
     claim: 'Claim',
     releaseAssignment: 'Release Assignment',
     saveChanges: 'Save Changes',
@@ -109,6 +114,7 @@ const pageCopy: Record<AppLanguage, PageCopy> = {
     notAvailable: 'Not Available',
     noAttachments: 'No Attachments',
     noSupportingFiles: 'No supporting files submitted yet.',
+    noHistory: 'No assignment history yet.',
     indicatorTypeOptions: [
       'Duplicate Claims',
       'Billing Pattern Anomaly',
@@ -139,8 +145,10 @@ const pageCopy: Record<AppLanguage, PageCopy> = {
   },
   ar: {
     title: 'تفاصيل البلاغ',
+    titleNew: 'بلاغ جديد',
     subtitle:
       'راجع نظرة عامة البلاغ أولًا، ثم حدّث سير العمل، والمؤشرات، وتفاصيل الاحتيال المؤكد.',
+    subtitleNew: 'أنشئ بلاغ احتيال جديدًا من خلال إدخال جميع التفاصيل أدناه.',
     claim: 'استلام البلاغ',
     releaseAssignment: 'إلغاء التعيين',
     saveChanges: 'حفظ التغييرات',
@@ -185,6 +193,7 @@ const pageCopy: Record<AppLanguage, PageCopy> = {
     notAvailable: 'غير متوفر',
     noAttachments: 'لا توجد مرفقات',
     noSupportingFiles: 'لا توجد ملفات داعمة مرفقة حتى الآن.',
+    noHistory: 'لا يوجد سجل تعيين حتى الآن.',
     indicatorTypeOptions: [
       'مطالبات مكررة',
       'شذوذ في نمط الفوترة',
@@ -210,19 +219,61 @@ const pageCopy: Record<AppLanguage, PageCopy> = {
 export default function CaseDetailsPage() {
   const { caseId } = useParams();
   const { language } = useOutletContext<{ language: AppLanguage }>();
-  const item = fraudCases.find((entry) => entry.id === caseId) ?? fraudCases[0];
   const t = useMemo(() => pageCopy[language], [language]);
   const isArabic = language === 'ar';
+  const isNewCase = !caseId || caseId === 'new';
+
+  const emptyCase = {
+    id: '',
+    claimId: '',
+    caseSource: '',
+    priorityLevel: '',
+    caseStatus: '',
+    caseType: '',
+    insuranceType: '',
+    suspectedAmount: '',
+    caseEntryDate: '',
+    assignedUser: '',
+    closureDate: '',
+    closureReason: '',
+    submissionDetails: '',
+    attachments: [],
+    reporterName: '',
+    reporterEmail: '',
+    reporterMobile: '',
+    nationalIdOrIqama: '',
+    assignmentDate: '',
+    assignedBy: '',
+    reassignmentReason: '',
+    fraudUnitNotes: '',
+    claimType: '',
+    fraudConfirmedDate: '',
+    fraudDetectionMethod: '',
+    fraudAmount: '',
+    actionTaken: '',
+    referredEntity: '',
+    assignmentHistory: [],
+    fraudIndicator: {
+      fraudIndicatorType: '',
+      indicatorDescription: '',
+      occurrenceCount: 0,
+      fraudOfficerDecision: '',
+    },
+  };
+
+  const item = isNewCase
+    ? emptyCase
+    : fraudCases.find((entry) => entry.id === caseId) ?? fraudCases[0];
 
   return (
     <div dir={isArabic ? 'rtl' : 'ltr'}>
       <PageHeader
-        title={`${t.title} - ${item.id}`}
-        subtitle={t.subtitle}
+        title={isNewCase ? t.titleNew : `${t.title} - ${item.id}`}
+        subtitle={isNewCase ? t.subtitleNew : t.subtitle}
         action={
           <div className="actions-inline" style={{ gap: 12 }}>
-            <button className="btn">{t.claim}</button>
-            <button className="btn">{t.releaseAssignment}</button>
+            {!isNewCase ? <button className="btn">{t.claim}</button> : null}
+            {!isNewCase ? <button className="btn">{t.releaseAssignment}</button> : null}
             <button className="btn primary">{t.saveChanges}</button>
           </div>
         }
@@ -234,60 +285,116 @@ export default function CaseDetailsPage() {
 
           <div className="case-overview-top">
             <div>
-              <h3>{item.id}</h3>
-              <p className="muted">
-                {item.claimId} - {item.caseSource}
-              </p>
+              {isNewCase ? (
+                <div className="form-grid single">
+                  <label>
+                    <span>{t.caseId}</span>
+                    <input defaultValue={item.id} placeholder={t.caseId} />
+                  </label>
+                  <label>
+                    <span>{t.claimId}</span>
+                    <input defaultValue={item.claimId} placeholder={t.claimId} />
+                  </label>
+                  <label>
+                    <span>Case Source</span>
+                    <input defaultValue={item.caseSource} placeholder="Case Source" />
+                  </label>
+                </div>
+              ) : (
+                <>
+                  <h3>{item.id}</h3>
+                  <p className="muted">
+                    {item.claimId} - {item.caseSource}
+                  </p>
+                </>
+              )}
             </div>
 
-            <div className="actions-inline">
-              <span className={`badge ${item.priorityLevel.toLowerCase()}`}>{item.priorityLevel}</span>
-              <span className="case-status-pill">{item.caseStatus}</span>
-            </div>
+            {!isNewCase ? (
+              <div className="actions-inline">
+                <span className={`badge ${item.priorityLevel.toLowerCase()}`}>{item.priorityLevel}</span>
+                <span className="case-status-pill">{item.caseStatus}</span>
+              </div>
+            ) : null}
           </div>
 
           <div className="case-metric-grid">
             <div className="case-metric">
               <span className="muted small">{t.caseType}</span>
-              <strong>{item.caseType}</strong>
+              {isNewCase ? (
+                <input defaultValue={item.caseType} placeholder={t.caseType} />
+              ) : (
+                <strong>{item.caseType}</strong>
+              )}
             </div>
             <div className="case-metric">
               <span className="muted small">{t.insuranceType}</span>
-              <strong>{item.insuranceType}</strong>
+              {isNewCase ? (
+                <input defaultValue={item.insuranceType} placeholder={t.insuranceType} />
+              ) : (
+                <strong>{item.insuranceType}</strong>
+              )}
             </div>
             <div className="case-metric">
               <span className="muted small">{t.suspectedAmount}</span>
-              <strong>{item.suspectedAmount}</strong>
+              {isNewCase ? (
+                <input defaultValue={item.suspectedAmount} placeholder={t.suspectedAmount} />
+              ) : (
+                <strong>{item.suspectedAmount}</strong>
+              )}
             </div>
             <div className="case-metric">
               <span className="muted small">{t.entryDate}</span>
-              <strong>{item.caseEntryDate}</strong>
+              {isNewCase ? (
+                <input type="date" defaultValue={item.caseEntryDate} />
+              ) : (
+                <strong>{item.caseEntryDate}</strong>
+              )}
             </div>
             <div className="case-metric">
               <span className="muted small">{t.assignedUser}</span>
-              <strong>{item.assignedUser ?? t.unassigned}</strong>
+              {isNewCase ? (
+                <select defaultValue={item.assignedUser}>
+                  <option value="">{t.unassigned}</option>
+                  {users
+                    .filter((u) => u.role === 'Fraud Team Member')
+                    .map((u) => (
+                      <option key={u.id}>{u.fullName}</option>
+                    ))}
+                </select>
+              ) : (
+                <strong>{item.assignedUser ?? t.unassigned}</strong>
+              )}
             </div>
             <div className="case-metric">
               <span className="muted small">{t.closureDate}</span>
-              <strong>{item.closureDate || t.notClosed}</strong>
+              {isNewCase ? (
+                <input type="date" defaultValue={item.closureDate} />
+              ) : (
+                <strong>{item.closureDate || t.notClosed}</strong>
+              )}
             </div>
             <div className="case-metric">
               <span className="muted small">{t.closureReason}</span>
-              <strong>{item.closureReason || t.notAvailable}</strong>
+              {isNewCase ? (
+                <input defaultValue={item.closureReason} placeholder={t.closureReason} />
+              ) : (
+                <strong>{item.closureReason || t.notAvailable}</strong>
+              )}
             </div>
           </div>
 
           <div className="form-grid single top-gap">
             <label>
               <span>{t.description}</span>
-              <textarea defaultValue={item.submissionDetails} rows={5} disabled />
+              <textarea defaultValue={item.submissionDetails} rows={5} />
             </label>
 
             <div>
               <span>{t.attachmentsView}</span>
               <div className="activity-list top-gap">
                 {item.attachments.length > 0 ? (
-                  item.attachments.map((attachment) => (
+                  item.attachments.map((attachment: any) => (
                     <div className="activity-item" key={attachment.id}>
                       <strong>{attachment.fileName}</strong>
                       <span>{attachment.fileType}</span>
@@ -306,22 +413,45 @@ export default function CaseDetailsPage() {
 
         <div className="card case-contact-card compact-reporter-card">
           <span className="eyebrow">{t.reporter}</span>
-          <h3>{item.reporterName}</h3>
+          {isNewCase ? (
+            <div className="form-grid single">
+              <label>
+                <span>{t.reporter}</span>
+                <input defaultValue={item.reporterName} placeholder={t.reporter} />
+              </label>
+              <label>
+                <span>{t.email}</span>
+                <input defaultValue={item.reporterEmail} placeholder={t.email} />
+              </label>
+              <label>
+                <span>{t.mobileNumber}</span>
+                <input defaultValue={item.reporterMobile} placeholder={t.mobileNumber} />
+              </label>
+              <label>
+                <span>{t.nationalId}</span>
+                <input defaultValue={item.nationalIdOrIqama} placeholder={t.nationalId} />
+              </label>
+            </div>
+          ) : (
+            <>
+              <h3>{item.reporterName}</h3>
 
-          <div className="case-contact-list compact">
-            <div>
-              <span className="muted small">{t.email}</span>
-              <strong>{item.reporterEmail}</strong>
-            </div>
-            <div>
-              <span className="muted small">{t.mobileNumber}</span>
-              <strong>{item.reporterMobile}</strong>
-            </div>
-            <div>
-              <span className="muted small">{t.nationalId}</span>
-              <strong>{item.nationalIdOrIqama}</strong>
-            </div>
-          </div>
+              <div className="case-contact-list compact">
+                <div>
+                  <span className="muted small">{t.email}</span>
+                  <strong>{item.reporterEmail}</strong>
+                </div>
+                <div>
+                  <span className="muted small">{t.mobileNumber}</span>
+                  <strong>{item.reporterMobile}</strong>
+                </div>
+                <div>
+                  <span className="muted small">{t.nationalId}</span>
+                  <strong>{item.nationalIdOrIqama}</strong>
+                </div>
+              </div>
+            </>
+          )}
         </div>
       </section>
 
@@ -388,6 +518,7 @@ export default function CaseDetailsPage() {
               <label>
                 <span>{t.fraudIndicatorType}</span>
                 <select defaultValue={item.fraudIndicator.fraudIndicatorType}>
+                  <option value=""></option>
                   {t.indicatorTypeOptions.map((option: string) => (
                     <option key={option}>{option}</option>
                   ))}
@@ -401,12 +532,13 @@ export default function CaseDetailsPage() {
 
               <label>
                 <span>{t.occurrenceCount}</span>
-                <input defaultValue={String(item.fraudIndicator.occurrenceCount)} />
+                <input defaultValue={String(item.fraudIndicator.occurrenceCount || '')} />
               </label>
 
               <label>
                 <span>{t.fraudOfficerDecision}</span>
                 <select defaultValue={item.fraudIndicator.fraudOfficerDecision}>
+                  <option value=""></option>
                   {t.decisionOptions.map((option: string) => (
                     <option key={option}>{option}</option>
                   ))}
@@ -450,13 +582,21 @@ export default function CaseDetailsPage() {
           </div>
 
           <Table title={t.assignmentHistory} headers={[t.historyAssignedTo, t.historyDate, t.historyNotes]}>
-            {item.assignmentHistory.map((entry, index) => (
-              <tr key={`${entry.changeDate}-${index}`}>
-                <td>{entry.newUser ?? t.unassigned}</td>
-                <td>{entry.changeDate}</td>
-                <td>{entry.changeReason}</td>
+            {item.assignmentHistory.length > 0 ? (
+              item.assignmentHistory.map((entry: any, index: number) => (
+                <tr key={`${entry.changeDate}-${index}`}>
+                  <td>{entry.newUser ?? t.unassigned}</td>
+                  <td>{entry.changeDate}</td>
+                  <td>{entry.changeReason}</td>
+                </tr>
+              ))
+            ) : (
+              <tr>
+                <td colSpan={3} className="muted" style={{ textAlign: 'center', padding: '24px 16px' }}>
+                  {t.noHistory}
+                </td>
               </tr>
-            ))}
+            )}
           </Table>
         </div>
       </section>
