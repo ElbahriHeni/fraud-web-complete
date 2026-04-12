@@ -22,6 +22,7 @@ type QueueCopy = {
   openCase: string;
   updateStatus: string;
   addNote: string;
+  createCase: string;
 
   all: string;
   unassigned: string;
@@ -104,6 +105,7 @@ const pageCopy: Record<AppLanguage, QueueCopy> = {
     openCase: 'Open Case',
     updateStatus: 'Update Status',
     addNote: 'Add Note',
+    createCase: 'Create Case',
 
     all: 'All',
     unassigned: 'Unassigned',
@@ -184,6 +186,7 @@ const pageCopy: Record<AppLanguage, QueueCopy> = {
     openCase: 'فتح البلاغ',
     updateStatus: 'تحديث الحالة',
     addNote: 'إضافة ملاحظة',
+    createCase: 'إنشاء بلاغ',
 
     all: 'الكل',
     unassigned: 'غير المعيّنة',
@@ -435,23 +438,9 @@ export default function FraudQueuePage() {
         title={t.title}
         subtitle={t.subtitle}
         action={
-          <div className="actions-inline" style={{ gap: 12, flexWrap: 'wrap' }}>
-            <button className="btn" type="button">
-              {t.viewCases}
-            </button>
-            <button className="btn" type="button">
-              {t.assignToMe}
-            </button>
-            <button className="btn" type="button">
-              {t.reassign}
-            </button>
-            <button className="btn" type="button">
-              {t.releaseAssignment}
-            </button>
-            <button className="btn primary" type="button">
-              {t.export}
-            </button>
-          </div>
+          <Link className="btn primary" to="/app/cases/new">
+            {t.createCase}
+          </Link>
         }
       />
 
