@@ -327,21 +327,115 @@ export default function NewCaseWizardPage() {
       />
 
       <div className="card" style={{ marginBottom: 20 }}>
-        <div className="actions-inline" style={{ gap: 10, flexWrap: 'wrap' }}>
-          {stepOrder.map((step, index) => (
-            <button
-              key={step}
-              type="button"
-              className="btn"
-              onClick={() => setCurrentStep(step)}
-              style={{
-                borderColor: currentStep === step ? 'rgba(13, 108, 104, 0.35)' : undefined,
-                background: currentStep === step ? 'rgba(221, 244, 240, 0.9)' : undefined,
-              }}
-            >
-              {index + 1}. {stepLabels[step]}
-            </button>
-          ))}
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: `repeat(${stepOrder.length}, minmax(0, 1fr))`,
+            gap: 12,
+            alignItems: 'start',
+          }}
+        >
+          {stepOrder.map((step, index) => {
+            const isActive = currentStep === step;
+            const isCompleted = index < currentStepIndex;
+            const stepNumber = index + 1;
+
+            return (
+              <button
+                key={step}
+                type="button"
+                onClick={() => setCurrentStep(step)}
+                style={{
+                  border: 'none',
+                  background: 'transparent',
+                  padding: 0,
+                  textAlign: isArabic ? 'right' : 'left',
+                  cursor: 'pointer',
+                }}
+              >
+                <div
+                  style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: 10,
+                  }}
+                >
+                  <div
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 10,
+                      flexDirection: isArabic ? 'row-reverse' : 'row',
+                    }}
+                  >
+                    <div
+                      style={{
+                        width: 34,
+                        height: 34,
+                        minWidth: 34,
+                        borderRadius: '999px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        fontWeight: 700,
+                        fontSize: 14,
+                        color: isActive || isCompleted ? '#fff' : '#0f172a',
+                        background:
+                          isActive || isCompleted
+                            ? 'rgba(13, 108, 104, 0.95)'
+                            : 'rgba(15, 23, 42, 0.08)',
+                        border: isActive
+                          ? '2px solid rgba(13, 108, 104, 1)'
+                          : '2px solid transparent',
+                      }}
+                    >
+                      {isCompleted ? '✓' : stepNumber}
+                    </div>
+
+                    <div style={{ minWidth: 0 }}>
+                      <div
+                        style={{
+                          fontSize: 12,
+                          color: 'rgba(15, 23, 42, 0.55)',
+                          marginBottom: 2,
+                        }}
+                      >
+                        {language === 'ar' ? `الخطوة ${stepNumber}` : `Step ${stepNumber}`}
+                      </div>
+                      <div
+                        style={{
+                          fontWeight: isActive ? 700 : 600,
+                          color: isActive ? 'rgba(13, 108, 104, 1)' : 'inherit',
+                          lineHeight: 1.25,
+                        }}
+                      >
+                        {stepLabels[step]}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div
+                    style={{
+                      height: 6,
+                      borderRadius: 999,
+                      background: 'rgba(15, 23, 42, 0.08)',
+                      overflow: 'hidden',
+                    }}
+                  >
+                    <div
+                      style={{
+                        height: '100%',
+                        width: isCompleted ? '100%' : isActive ? '60%' : '0%',
+                        background: 'rgba(13, 108, 104, 0.95)',
+                        borderRadius: 999,
+                        transition: 'width 0.25s ease',
+                      }}
+                    />
+                  </div>
+                </div>
+              </button>
+            );
+          })}
         </div>
       </div>
 
