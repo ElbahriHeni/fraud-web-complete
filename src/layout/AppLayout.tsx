@@ -1,7 +1,6 @@
 import { Link, NavLink, Outlet } from 'react-router-dom';
 import { useEffect, useMemo, useState } from 'react';
 
-
 export type AppLanguage = 'en' | 'ar';
 
 const copy: Record<
@@ -11,7 +10,6 @@ const copy: Record<
     brandSubtitle: string;
     dashboard: string;
     queue: string;
-    caseDetails: string;
     reports: string;
     logout: string;
     languageButton: string;
@@ -23,7 +21,6 @@ const copy: Record<
     brandSubtitle: 'Investigation command center',
     dashboard: 'Dashboard',
     queue: 'Fraud Queue',
-    caseDetails: 'Case Details',
     reports: 'Reports',
     logout: 'Log Out',
     languageButton: 'العربية',
@@ -34,7 +31,6 @@ const copy: Record<
     brandSubtitle: 'مركز قيادة التحقيق',
     dashboard: 'لوحة التحكم',
     queue: 'قائمة بلاغات الاحتيال',
-    caseDetails: 'تفاصيل البلاغ',
     reports: 'التقارير',
     logout: 'تسجيل الخروج',
     languageButton: 'English',
@@ -60,7 +56,6 @@ export default function AppLayout() {
     () => [
       { to: '/app/dashboard', label: t.dashboard },
       { to: '/app/queue', label: t.queue },
-      { to: '/app/cases/FC-1001', label: t.caseDetails },
       { to: '/app/reports', label: t.reports },
     ],
     [t]
