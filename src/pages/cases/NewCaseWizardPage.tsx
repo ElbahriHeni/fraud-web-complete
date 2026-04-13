@@ -217,9 +217,9 @@ const pageCopy: Record<AppLanguage, PageCopy> = {
 const stepOrder: WizardStep[] = [
   'caseInfo',
   'reporter',
-  'workflow',
   'indicators',
   'fraudDetails',
+  'workflow',
   'attachments',
   'review',
 ];
@@ -524,45 +524,6 @@ export default function NewCaseWizardPage() {
           </div>
         ) : null}
 
-        {currentStep === 'workflow' ? (
-          <div className="form-grid">
-            <label>
-              <span>{t.assignedUser}</span>
-              <input value={form.assignedUser} onChange={(e) => updateField('assignedUser', e.target.value)} placeholder={t.unassigned} />
-            </label>
-            <label>
-              <span>{t.caseStatus}</span>
-              <select value={form.caseStatus} onChange={(e) => updateField('caseStatus', e.target.value)}>
-                <option value=""></option>
-                {t.statusOptions.map((option) => (
-                  <option key={option}>{option}</option>
-                ))}
-              </select>
-            </label>
-            <label>
-              <span>{t.assignmentDate}</span>
-              <input type="date" value={form.assignmentDate} onChange={(e) => updateField('assignmentDate', e.target.value)} />
-            </label>
-            <label>
-              <span>{t.assignedBy}</span>
-              <select value={form.assignedBy} onChange={(e) => updateField('assignedBy', e.target.value)}>
-                <option value=""></option>
-                {t.assignedByOptions.map((option) => (
-                  <option key={option}>{option}</option>
-                ))}
-              </select>
-            </label>
-            <label>
-              <span>{t.reassignmentReason}</span>
-              <input value={form.reassignmentReason} onChange={(e) => updateField('reassignmentReason', e.target.value)} />
-            </label>
-            <label style={{ gridColumn: '1 / -1' }}>
-              <span>{t.fraudUnitNotes}</span>
-              <textarea rows={5} value={form.fraudUnitNotes} onChange={(e) => updateField('fraudUnitNotes', e.target.value)} />
-            </label>
-          </div>
-        ) : null}
-
         {currentStep === 'indicators' ? (
           <div className="form-grid">
             <label>
@@ -619,6 +580,45 @@ export default function NewCaseWizardPage() {
             <label>
               <span>{t.referredEntity}</span>
               <input value={form.referredEntity} onChange={(e) => updateField('referredEntity', e.target.value)} />
+            </label>
+          </div>
+        ) : null}
+
+        {currentStep === 'workflow' ? (
+          <div className="form-grid">
+            <label>
+              <span>{t.assignedUser}</span>
+              <input value={form.assignedUser} onChange={(e) => updateField('assignedUser', e.target.value)} placeholder={t.unassigned} />
+            </label>
+            <label>
+              <span>{t.caseStatus}</span>
+              <select value={form.caseStatus} onChange={(e) => updateField('caseStatus', e.target.value)}>
+                <option value=""></option>
+                {t.statusOptions.map((option) => (
+                  <option key={option}>{option}</option>
+                ))}
+              </select>
+            </label>
+            <label>
+              <span>{t.assignmentDate}</span>
+              <input type="date" value={form.assignmentDate} onChange={(e) => updateField('assignmentDate', e.target.value)} />
+            </label>
+            <label>
+              <span>{t.assignedBy}</span>
+              <select value={form.assignedBy} onChange={(e) => updateField('assignedBy', e.target.value)}>
+                <option value=""></option>
+                {t.assignedByOptions.map((option) => (
+                  <option key={option}>{option}</option>
+                ))}
+              </select>
+            </label>
+            <label>
+              <span>{t.reassignmentReason}</span>
+              <input value={form.reassignmentReason} onChange={(e) => updateField('reassignmentReason', e.target.value)} />
+            </label>
+            <label style={{ gridColumn: '1 / -1' }}>
+              <span>{t.fraudUnitNotes}</span>
+              <textarea rows={5} value={form.fraudUnitNotes} onChange={(e) => updateField('fraudUnitNotes', e.target.value)} />
             </label>
           </div>
         ) : null}
