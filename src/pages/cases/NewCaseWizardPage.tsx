@@ -332,7 +332,7 @@ export default function NewCaseWizardPage() {
             display: 'grid',
             gridTemplateColumns: `repeat(${stepOrder.length}, minmax(0, 1fr))`,
             gap: 12,
-            alignItems: 'start',
+            alignItems: 'stretch',
           }}
         >
           {stepOrder.map((step, index) => {
@@ -358,12 +358,13 @@ export default function NewCaseWizardPage() {
                     display: 'flex',
                     flexDirection: 'column',
                     gap: 10,
+                    height: '100%',
                   }}
                 >
                   <div
                     style={{
                       display: 'flex',
-                      alignItems: 'center',
+                      alignItems: 'flex-start',
                       gap: 10,
                       flexDirection: isArabic ? 'row-reverse' : 'row',
                     }}
@@ -387,12 +388,21 @@ export default function NewCaseWizardPage() {
                         border: isActive
                           ? '2px solid rgba(13, 108, 104, 1)'
                           : '2px solid transparent',
+                        marginTop: 2,
                       }}
                     >
                       {isCompleted ? '✓' : stepNumber}
                     </div>
 
-                    <div style={{ minWidth: 0 }}>
+                    <div
+                      style={{
+                        minWidth: 0,
+                        minHeight: 58,
+                        display: 'flex',
+                        flexDirection: 'column',
+                        justifyContent: 'center',
+                      }}
+                    >
                       <div
                         style={{
                           fontSize: 12,
@@ -420,6 +430,7 @@ export default function NewCaseWizardPage() {
                       borderRadius: 999,
                       background: 'rgba(15, 23, 42, 0.08)',
                       overflow: 'hidden',
+                      marginTop: 'auto',
                     }}
                   >
                     <div
