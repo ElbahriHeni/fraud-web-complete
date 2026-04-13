@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { useOutletContext } from 'react-router-dom';
+import { useNavigate, useOutletContext } from 'react-router-dom';
 import PageHeader from '../../components/PageHeader';
 import type { AppLanguage } from '../../layout/AppLayout';
 
@@ -255,6 +255,7 @@ const generateCaseId = () => {
 };
 
 export default function NewCaseWizardPage() {
+  const navigate = useNavigate();
   const { language } = useOutletContext<{ language: AppLanguage }>();
   const t = useMemo(() => pageCopy[language], [language]);
   const isArabic = language === 'ar';
@@ -323,6 +324,10 @@ export default function NewCaseWizardPage() {
     if (currentStepIndex > 0) {
       setCurrentStep(stepOrder[currentStepIndex - 1]);
     }
+  };
+
+  const handleSubmit = () => {
+    navigate('/app/queue');
   };
 
   const handleFiles = (incomingFiles: FileList | null) => {
@@ -848,7 +853,7 @@ export default function NewCaseWizardPage() {
               {t.next}
             </button>
           ) : (
-            <button className="btn primary" type="button">
+            <button className="btn primary" type="button" onClick={handleSubmit}>
               {t.submitCase}
             </button>
           )}
