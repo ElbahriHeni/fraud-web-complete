@@ -411,7 +411,9 @@ export default function NewCaseWizardPage() {
         action={
           <div className="actions-inline" style={{ gap: 12 }}>
             <button className="btn">{t.saveDraft}</button>
-            <button className="btn primary">{t.submitCase}</button>
+            <button className="btn primary" type="button" onClick={handleSubmit}>
+              {t.submitCase}
+            </button>
           </div>
         }
       />
