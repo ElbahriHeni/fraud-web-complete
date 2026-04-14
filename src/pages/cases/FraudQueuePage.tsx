@@ -530,26 +530,6 @@ export default function FraudQueuePage() {
                   <Link className="mini-btn primary" to={`/app/cases/${item.id}`}>
                     {t.openCase}
                   </Link>
-                  {!item.assignedUser ? (
-                    <button className="mini-btn" type="button">
-                      {t.assignToMe}
-                    </button>
-                  ) : (
-                    <>
-                      <button className="mini-btn" type="button">
-                        {t.reassign}
-                      </button>
-                      <button className="mini-btn" type="button">
-                        {t.releaseAssignment}
-                      </button>
-                    </>
-                  )}
-                  <button className="mini-btn" type="button">
-                    {t.updateStatus}
-                  </button>
-                  <button className="mini-btn" type="button">
-                    {t.addNote}
-                  </button>
                 </div>
               </td>
             </tr>
