@@ -236,8 +236,8 @@ const pageCopy: Record<AppLanguage, PageCopy> = {
 };
 
 const stepOrder: WizardStep[] = [
-  'caseInfo',
   'reporter',
+  'caseInfo',
   'indicators',
   'fraudDetails',
   'workflow',
@@ -260,7 +260,7 @@ export default function NewCaseWizardPage() {
   const t = useMemo(() => pageCopy[language], [language]);
   const isArabic = language === 'ar';
 
-  const [currentStep, setCurrentStep] = useState<WizardStep>('caseInfo');
+  const [currentStep, setCurrentStep] = useState<WizardStep>('reporter');
   const [caseId] = useState(generateCaseId());
   const [files, setFiles] = useState<File[]>([]);
 
@@ -543,6 +543,27 @@ export default function NewCaseWizardPage() {
       </div>
 
       <div className="card">
+        {currentStep === 'reporter' ? (
+          <div className="form-grid">
+            <label>
+              <span>{t.reporterName}</span>
+              <input value={form.reporterName} onChange={(e) => updateField('reporterName', e.target.value)} />
+            </label>
+            <label>
+              <span>{t.email}</span>
+              <input value={form.email} onChange={(e) => updateField('email', e.target.value)} />
+            </label>
+            <label>
+              <span>{t.mobileNumber}</span>
+              <input value={form.mobileNumber} onChange={(e) => updateField('mobileNumber', e.target.value)} />
+            </label>
+            <label>
+              <span>{t.nationalId}</span>
+              <input value={form.nationalId} onChange={(e) => updateField('nationalId', e.target.value)} />
+            </label>
+          </div>
+        ) : null}
+
         {currentStep === 'caseInfo' ? (
           <div className="form-grid">
             <label>
@@ -591,27 +612,6 @@ export default function NewCaseWizardPage() {
             <label style={{ gridColumn: '1 / -1' }}>
               <span>{t.description}</span>
               <textarea rows={5} value={form.description} onChange={(e) => updateField('description', e.target.value)} />
-            </label>
-          </div>
-        ) : null}
-
-        {currentStep === 'reporter' ? (
-          <div className="form-grid">
-            <label>
-              <span>{t.reporterName}</span>
-              <input value={form.reporterName} onChange={(e) => updateField('reporterName', e.target.value)} />
-            </label>
-            <label>
-              <span>{t.email}</span>
-              <input value={form.email} onChange={(e) => updateField('email', e.target.value)} />
-            </label>
-            <label>
-              <span>{t.mobileNumber}</span>
-              <input value={form.mobileNumber} onChange={(e) => updateField('mobileNumber', e.target.value)} />
-            </label>
-            <label>
-              <span>{t.nationalId}</span>
-              <input value={form.nationalId} onChange={(e) => updateField('nationalId', e.target.value)} />
             </label>
           </div>
         ) : null}
