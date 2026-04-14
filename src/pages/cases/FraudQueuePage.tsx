@@ -7,8 +7,6 @@ import type { AppLanguage } from '../../layout/AppLayout';
 
 const CURRENT_USER = 'Fatimah Salem';
 
-type QueueTab = 'all' | 'unassigned' | 'assignedToMe' | 'inProgress' | 'closed';
-
 type QueueCopy = {
   eyebrow: string;
   title: string;
@@ -263,7 +261,6 @@ export default function FraudQueuePage() {
   const t = useMemo(() => pageCopy[language], [language]);
   const isArabic = language === 'ar';
 
-  const [activeTab, setActiveTab] = useState<QueueTab>('all');
   const [searchField, setSearchField] = useState<SearchField>('caseId');
   const [searchValue, setSearchValue] = useState('');
   const [quickFilter, setQuickFilter] = useState<string>('all');
@@ -293,17 +290,6 @@ export default function FraudQueuePage() {
       { value: 'reporterName', label: t.reporterName },
       { value: 'reporterEmail', label: t.emailAddress },
       { value: 'reporterMobile', label: t.mobileNumber },
-    ],
-    [t]
-  );
-
-  const tabs = useMemo(
-    () => [
-      { key: 'all' as QueueTab, label: t.all },
-      { key: 'unassigned' as QueueTab, label: t.unassigned },
-      { key: 'assignedToMe' as QueueTab, label: t.assignedToMe },
-      { key: 'inProgress' as QueueTab, label: t.inProgress },
-      { key: 'closed' as QueueTab, label: t.closed },
     ],
     [t]
   );
@@ -383,16 +369,6 @@ export default function FraudQueuePage() {
     return fraudCases.filter((item) => {
       const assignedValue = item.assignedUser ?? t.unassignedValue;
 
-      if (activeTab === 'unassigned' && item.assignedUser) return false;
-      if (activeTab === 'assignedToMe' && item.assignedUser !== CURRENT_USER) return false;
-      if (
-        activeTab === 'inProgress' &&
-        !['Under Review', 'Under Investigation', 'Pending Information'].includes(item.caseStatus)
-      ) {
-        return false;
-      }
-      if (activeTab === 'closed' && item.caseStatus !== 'Closed') return false;
-
       if (quickFilter === 'unassigned' && item.assignedUser) return false;
       if (quickFilter === 'assignedToMe' && item.assignedUser !== CURRENT_USER) return false;
       if (quickFilter === 'highPriority' && item.priorityLevel !== 'High') return false;
@@ -421,7 +397,6 @@ export default function FraudQueuePage() {
       );
     });
   }, [
-    activeTab,
     caseTypeFilter,
     dateRangeFilter,
     insuranceTypeFilter,
@@ -443,25 +418,6 @@ export default function FraudQueuePage() {
           </Link>
         }
       />
-
-      <div className="card" style={{ marginBottom: 20 }}>
-        <div className="actions-inline" style={{ gap: 10, flexWrap: 'wrap' }}>
-          {tabs.map((tab) => (
-            <button
-              key={tab.key}
-              type="button"
-              className="btn"
-              onClick={() => setActiveTab(tab.key)}
-              style={{
-                borderColor: activeTab === tab.key ? 'rgba(13, 108, 104, 0.35)' : undefined,
-                background: activeTab === tab.key ? 'rgba(221, 244, 240, 0.9)' : undefined,
-              }}
-            >
-              {tab.label}
-            </button>
-          ))}
-        </div>
-      </div>
 
       <div className="card queue-filters" style={{ marginBottom: 20 }}>
         <div style={{ gridColumn: '1 / -1' }}>
