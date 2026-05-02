@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import { useNavigate, useOutletContext } from 'react-router-dom';
 import PageHeader from '../../components/PageHeader';
+import { apiPost } from '../../api';
 import type { AppLanguage } from '../../layout/AppLayout';
 
 type WizardStep =
@@ -17,6 +18,9 @@ type PageCopy = {
   subtitle: string;
   saveDraft: string;
   submitCase: string;
+  submitting: string;
+  submitSuccess: string;
+  submitError: string;
   next: string;
   back: string;
 
@@ -92,6 +96,9 @@ const pageCopy: Record<AppLanguage, PageCopy> = {
     subtitle: 'Create a new fraud case step by step.',
     saveDraft: 'Save Draft',
     submitCase: 'Submit Case',
+    submitting: 'Submitting...',
+    submitSuccess: 'Case created successfully.',
+    submitError: 'Could not create the case. Please check the backend and try again.',
     next: 'Next',
     back: 'Back',
 
@@ -165,6 +172,9 @@ const pageCopy: Record<AppLanguage, PageCopy> = {
     subtitle: 'إنشاء بلاغ احتيال جديد خطوة بخطوة.',
     saveDraft: 'حفظ كمسودة',
     submitCase: 'إرسال البلاغ',
+    submitting: 'جاري الإرسال...',
+    submitSuccess: 'تم إنشاء البلاغ بنجاح.',
+    submitError: 'تعذر إنشاء البلاغ. يرجى التحقق من الخادم والمحاولة مرة أخرى.',
     next: 'التالي',
     back: 'السابق',
 
@@ -254,6 +264,69 @@ const generateCaseId = () => {
   return `FC-${yyyy}${mm}${dd}-${random}`;
 };
 
+
+type CreateCaseResponse = {
+  id: number;
+  case_number: string;
+};
+
+const optionMappings = {
+  caseSource: {
+    'الإبلاغ الداخلي': 'Whistleblowing',
+    داخلي: 'Internal',
+    'الموقع الإلكتروني': 'Website',
+    'مركز الاتصال': 'Call Center',
+    'تدقيق مقدم الخدمة': 'Provider Audit',
+    'خدمة العملاء': 'Customer Care',
+  },
+  caseType: {
+    'اشتباه احتيال': 'Fraud Suspected',
+    'تم تأكيد الاحتيال': 'Fraud Confirmed',
+    مخالفة: 'Violation',
+    'عدم تطابق المستندات': 'Document Mismatch',
+    'اشتباه في الهوية': 'Identity Concern',
+  },
+  insuranceType: {
+    مركبات: 'Motor',
+    طبي: 'Medical',
+    ممتلكات: 'Property',
+    سفر: 'Travel',
+  },
+  status: {
+    جديد: 'New',
+    'قيد المراجعة': 'Under Review',
+    'قيد التحقيق': 'Under Investigation',
+    'بانتظار معلومات': 'Pending Information',
+    'تم تأكيد الاحتيال': 'Fraud Confirmed',
+    مرفوض: 'Rejected',
+    مغلق: 'Closed',
+  },
+  indicatorType: {
+    'مطالبات مكررة': 'Duplicate Claims',
+    'شذوذ في نمط الفوترة': 'Billing Pattern Anomaly',
+    'عدم تطابق الوثيقة': 'Policy Mismatch',
+    'أدلة غير مكتملة': 'Incomplete Evidence',
+    'تكرار مبالغ عالية': 'High Value Repetition',
+    أخرى: 'Other',
+  },
+  decision: {
+    'المتابعة والتحقيق': 'Proceed with investigation',
+    'بانتظار معلومات إضافية': 'Pending additional information',
+    'تم تأكيد الاحتيال': 'Fraud confirmed',
+    مرفوض: 'Rejected',
+    'إغلاق البلاغ': 'Close case',
+  },
+  assignedBy: {
+    النظام: 'System',
+    المشرف: 'Supervisor',
+    'مدير مكافحة الاحتيال': 'Fraud Manager',
+  },
+} as const;
+
+const mapValue = <T extends Record<string, string>>(value: string, mapping: T) => {
+  return mapping[value as keyof T] ?? value;
+};
+
 export default function NewCaseWizardPage() {
   const navigate = useNavigate();
   const { language } = useOutletContext<{ language: AppLanguage }>();
@@ -263,6 +336,9 @@ export default function NewCaseWizardPage() {
   const [currentStep, setCurrentStep] = useState<WizardStep>('reporter');
   const [caseId] = useState(generateCaseId());
   const [files, setFiles] = useState<File[]>([]);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState('');
+  const [submitSuccess, setSubmitSuccess] = useState('');
 
   const [form, setForm] = useState({
     claimId: '',
@@ -326,8 +402,72 @@ export default function NewCaseWizardPage() {
     }
   };
 
-  const handleSubmit = () => {
-    navigate('/app/queue');
+  const handleSubmit = async () => {
+    try {
+      setIsSubmitting(true);
+      setSubmitError('');
+      setSubmitSuccess('');
+
+      const createdCase = await apiPost<CreateCaseResponse>('/api/cases', {
+        // Reporter
+        reporter_name: form.reporterName,
+        reporter_email: form.email,
+        reporter_mobile: form.mobileNumber,
+        national_id_or_iqama: form.nationalId,
+        consent_to_terms_and_privacy: true,
+
+        // Case information
+        claim_id: form.claimId,
+        case_source: mapValue(form.caseSource, optionMappings.caseSource),
+        case_type: mapValue(form.caseType, optionMappings.caseType),
+        insurance_type: mapValue(form.insuranceType, optionMappings.insuranceType),
+        priority_level: 'High',
+        suspected_amount: Number(form.suspectedAmount || 0),
+        description: form.description,
+        fraud_unit_notes: form.fraudUnitNotes,
+
+        // Fraud indicators
+        fraud_indicator_type: mapValue(form.fraudIndicatorType, optionMappings.indicatorType),
+        indicator_description: form.indicatorDescription,
+        occurrence_count: Number(form.occurrenceCount || 0),
+        risk_score: 0,
+        system_recommendation: '',
+        fraud_officer_decision: mapValue(form.fraudOfficerDecision, optionMappings.decision),
+
+        // Confirmed fraud details
+        claim_type: form.claimType,
+        fraud_confirmed_date: form.fraudConfirmedDate || null,
+        fraud_detection_method: form.fraudDetectionMethod,
+        fraud_amount: Number(form.fraudAmount || 0),
+        action_taken: form.actionTaken,
+        referred_entity: form.referredEntity,
+
+        // Workflow / assignment
+        case_status: mapValue(form.caseStatus, optionMappings.status) || 'New',
+        assigned_user: form.assignedUser,
+        assigned_by: mapValue(form.assignedBy, optionMappings.assignedBy) || 'Admin',
+        assignment_date: form.assignmentDate || null,
+        reassignment_reason: form.reassignmentReason,
+
+        // Attachments metadata only. Physical file upload needs storage later.
+        documents: files.map((file) => ({
+          file_name: file.name,
+          file_type: file.type || 'file',
+          file_url: '',
+          category: 'supporting_document',
+          uploaded_by: mapValue(form.assignedBy, optionMappings.assignedBy) || 'Admin',
+        })),
+
+        created_by: 'Admin',
+      });
+
+      setSubmitSuccess(t.submitSuccess);
+      navigate(`/app/cases/${createdCase.case_number}`);
+    } catch (error) {
+      setSubmitError(t.submitError);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleFiles = (incomingFiles: FileList | null) => {
@@ -411,12 +551,24 @@ export default function NewCaseWizardPage() {
         action={
           <div className="actions-inline" style={{ gap: 12 }}>
             <button className="btn">{t.saveDraft}</button>
-            <button className="btn primary" type="button" onClick={handleSubmit}>
-              {t.submitCase}
+            <button className="btn primary" type="button" onClick={handleSubmit} disabled={isSubmitting}>
+              {isSubmitting ? t.submitting : t.submitCase}
             </button>
           </div>
         }
       />
+
+      {submitError ? (
+        <div className="card" style={{ marginBottom: 16, color: '#b42318' }}>
+          {submitError}
+        </div>
+      ) : null}
+
+      {submitSuccess ? (
+        <div className="card" style={{ marginBottom: 16, color: '#0d6c68' }}>
+          {submitSuccess}
+        </div>
+      ) : null}
 
       <div className="card" style={{ marginBottom: 20 }}>
         <div
@@ -855,8 +1007,8 @@ export default function NewCaseWizardPage() {
               {t.next}
             </button>
           ) : (
-            <button className="btn primary" type="button" onClick={handleSubmit}>
-              {t.submitCase}
+            <button className="btn primary" type="button" onClick={handleSubmit} disabled={isSubmitting}>
+              {isSubmitting ? t.submitting : t.submitCase}
             </button>
           )}
         </div>

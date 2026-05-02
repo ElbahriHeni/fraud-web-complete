@@ -1,8 +1,9 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useOutletContext, useParams } from 'react-router-dom';
 import PageHeader from '../../components/PageHeader';
 import Table from '../../components/Table';
-import { fraudCases, users } from '../../data/mockData';
+import { users } from '../../data/mockData';
+import { apiGet, apiPatch, apiPost } from '../../api';
 import type { AppLanguage } from '../../layout/AppLayout';
 
 type WizardStep =
@@ -13,6 +14,112 @@ type WizardStep =
   | 'workflow'
   | 'attachments'
   | 'history';
+
+
+type BackendFraudCase = {
+  id: number;
+  case_number: string;
+  claim_id: string | null;
+  case_type: string | null;
+  case_source: string | null;
+  priority_level: string | null;
+  case_status: string | null;
+  assigned_user: string | null;
+  assignment_date: string | null;
+  assigned_by: string | null;
+  reassignment_reason: string | null;
+  case_entry_date: string | null;
+  closure_date: string | null;
+  closure_reason: string | null;
+  insurance_type: string | null;
+  suspected_amount: string | null;
+  fraud_unit_notes: string | null;
+  reporter_name: string | null;
+  reporter_email: string | null;
+  reporter_mobile: string | null;
+  national_id_or_iqama: string | null;
+  description: string | null;
+  fraud_indicator_type: string | null;
+  indicator_description: string | null;
+  occurrence_count: number | null;
+  fraud_officer_decision: string | null;
+  claim_type: string | null;
+  fraud_confirmed_date: string | null;
+  fraud_detection_method: string | null;
+  fraud_amount: string | null;
+  action_taken: string | null;
+  referred_entity: string | null;
+};
+
+type BackendAssignmentHistoryEntry = {
+  id: number;
+  previous_user: string | null;
+  new_user: string | null;
+  changed_by: string | null;
+  change_reason: string | null;
+  change_date: string | null;
+};
+
+type BackendDocument = {
+  id: number;
+  file_name: string;
+  file_type: string | null;
+  file_url: string | null;
+  category: string | null;
+  uploaded_by: string | null;
+  uploaded_at: string | null;
+};
+
+type CaseForm = {
+  id: string;
+  claimId: string;
+  caseSource: string;
+  priorityLevel: string;
+  caseStatus: string;
+  caseType: string;
+  insuranceType: string;
+  suspectedAmount: string;
+  caseEntryDate: string;
+  assignedUser: string;
+  closureDate: string;
+  closureReason: string;
+  submissionDetails: string;
+  reporterName: string;
+  reporterEmail: string;
+  reporterMobile: string;
+  nationalIdOrIqama: string;
+  assignmentDate: string;
+  assignedBy: string;
+  reassignmentReason: string;
+  fraudUnitNotes: string;
+  claimType: string;
+  fraudConfirmedDate: string;
+  fraudDetectionMethod: string;
+  fraudAmount: string;
+  actionTaken: string;
+  referredEntity: string;
+  fraudIndicatorType: string;
+  indicatorDescription: string;
+  occurrenceCount: string;
+  fraudOfficerDecision: string;
+};
+
+type AssignmentHistoryEntry = {
+  id?: string;
+  previousUser?: string;
+  newUser?: string;
+  changedBy?: string;
+  changeDate: string;
+  changeReason: string;
+};
+
+type AttachmentItem = {
+  id?: string;
+  fileName: string;
+  fileType: string;
+  fileUrl?: string;
+  category?: string;
+};
 
 type PageCopy = {
   title: string;
@@ -304,7 +411,7 @@ export default function CaseDetailsPage() {
   const isArabic = language === 'ar';
   const isNewCase = !caseId || caseId === 'new';
 
-  const emptyCase = {
+  const emptyForm: CaseForm = {
     id: '',
     claimId: '',
     caseSource: '',
@@ -318,7 +425,6 @@ export default function CaseDetailsPage() {
     closureDate: '',
     closureReason: '',
     submissionDetails: '',
-    attachments: [] as Array<{ id?: string; fileName: string; fileType: string }>,
     reporterName: '',
     reporterEmail: '',
     reporterMobile: '',
@@ -333,54 +439,142 @@ export default function CaseDetailsPage() {
     fraudAmount: '',
     actionTaken: '',
     referredEntity: '',
-    assignmentHistory: [] as Array<{ newUser?: string; changeDate: string; changeReason: string }>,
-    fraudIndicator: {
-      fraudIndicatorType: '',
-      indicatorDescription: '',
-      occurrenceCount: 0,
-      fraudOfficerDecision: '',
-    },
+    fraudIndicatorType: '',
+    indicatorDescription: '',
+    occurrenceCount: '',
+    fraudOfficerDecision: '',
   };
 
-  const sourceItem =
-    isNewCase ? emptyCase : fraudCases.find((entry) => entry.id === caseId) ?? fraudCases[0];
+  const toInputDate = (value: string | null | undefined) => {
+    if (!value) return '';
+
+    const date = new Date(value);
+
+    if (Number.isNaN(date.getTime())) {
+      return value.includes('T') ? value.split('T')[0] : value;
+    }
+
+    return date.toISOString().slice(0, 10);
+  };
+
+  const mapBackendCaseToForm = (item: BackendFraudCase): CaseForm => ({
+    id: item.case_number ?? '',
+    claimId: item.claim_id ?? '',
+    caseSource: item.case_source ?? '',
+    priorityLevel: item.priority_level ?? '',
+    caseStatus: item.case_status ?? '',
+    caseType: item.case_type ?? '',
+    insuranceType: item.insurance_type ?? '',
+    suspectedAmount: item.suspected_amount ?? '',
+    caseEntryDate: toInputDate(item.case_entry_date),
+    assignedUser: item.assigned_user ?? '',
+    closureDate: toInputDate(item.closure_date),
+    closureReason: item.closure_reason ?? '',
+    submissionDetails: item.description ?? '',
+    reporterName: item.reporter_name ?? '',
+    reporterEmail: item.reporter_email ?? '',
+    reporterMobile: item.reporter_mobile ?? '',
+    nationalIdOrIqama: item.national_id_or_iqama ?? '',
+    assignmentDate: toInputDate(item.assignment_date),
+    assignedBy: item.assigned_by ?? '',
+    reassignmentReason: item.reassignment_reason ?? '',
+    fraudUnitNotes: item.fraud_unit_notes ?? '',
+    claimType: item.claim_type ?? '',
+    fraudConfirmedDate: toInputDate(item.fraud_confirmed_date),
+    fraudDetectionMethod: item.fraud_detection_method ?? '',
+    fraudAmount: item.fraud_amount ?? '',
+    actionTaken: item.action_taken ?? '',
+    referredEntity: item.referred_entity ?? '',
+    fraudIndicatorType: item.fraud_indicator_type ?? '',
+    indicatorDescription: item.indicator_description ?? '',
+    occurrenceCount: String(item.occurrence_count ?? ''),
+    fraudOfficerDecision: item.fraud_officer_decision ?? '',
+  });
+
+
+  const mapBackendHistoryToRows = (items: BackendAssignmentHistoryEntry[]): AssignmentHistoryEntry[] =>
+    items.map((item) => ({
+      id: String(item.id),
+      previousUser: item.previous_user ?? undefined,
+      newUser: item.new_user ?? undefined,
+      changedBy: item.changed_by ?? undefined,
+      changeDate: item.change_date ? new Date(item.change_date).toLocaleString() : '',
+      changeReason: item.change_reason ?? '',
+    }));
+
+  const mapBackendDocumentsToAttachments = (items: BackendDocument[]): AttachmentItem[] =>
+    items.map((item) => ({
+      id: String(item.id),
+      fileName: item.file_name,
+      fileType: item.file_type ?? 'file',
+      fileUrl: item.file_url ?? undefined,
+      category: item.category ?? undefined,
+    }));
 
   const [currentStep, setCurrentStep] = useState<WizardStep>('reporter');
-  const [attachments, setAttachments] = useState(sourceItem.attachments);
+  const [attachments, setAttachments] = useState<AttachmentItem[]>([]);
+  const [assignmentHistory, setAssignmentHistory] = useState<AssignmentHistoryEntry[]>([]);
+  const [form, setForm] = useState<CaseForm>(emptyForm);
+  const [isLoadingCase, setIsLoadingCase] = useState(!isNewCase);
+  const [isSavingCase, setIsSavingCase] = useState(false);
+  const [isLoadingDocuments, setIsLoadingDocuments] = useState(false);
+  const [isLoadingHistory, setIsLoadingHistory] = useState(false);
+  const [hasLoadedDocuments, setHasLoadedDocuments] = useState(false);
+  const [hasLoadedHistory, setHasLoadedHistory] = useState(false);
+  const [caseError, setCaseError] = useState('');
+  const [saveMessage, setSaveMessage] = useState('');
 
-  const [form, setForm] = useState({
-    id: sourceItem.id ?? '',
-    claimId: sourceItem.claimId ?? '',
-    caseSource: sourceItem.caseSource ?? '',
-    priorityLevel: sourceItem.priorityLevel ?? '',
-    caseStatus: sourceItem.caseStatus ?? '',
-    caseType: sourceItem.caseType ?? '',
-    insuranceType: sourceItem.insuranceType ?? '',
-    suspectedAmount: sourceItem.suspectedAmount ?? '',
-    caseEntryDate: sourceItem.caseEntryDate ?? '',
-    assignedUser: sourceItem.assignedUser ?? '',
-    closureDate: sourceItem.closureDate ?? '',
-    closureReason: sourceItem.closureReason ?? '',
-    submissionDetails: sourceItem.submissionDetails ?? '',
-    reporterName: sourceItem.reporterName ?? '',
-    reporterEmail: sourceItem.reporterEmail ?? '',
-    reporterMobile: sourceItem.reporterMobile ?? '',
-    nationalIdOrIqama: sourceItem.nationalIdOrIqama ?? '',
-    assignmentDate: sourceItem.assignmentDate ?? '',
-    assignedBy: sourceItem.assignedBy ?? '',
-    reassignmentReason: sourceItem.reassignmentReason ?? '',
-    fraudUnitNotes: sourceItem.fraudUnitNotes ?? '',
-    claimType: sourceItem.claimType ?? '',
-    fraudConfirmedDate: sourceItem.fraudConfirmedDate ?? '',
-    fraudDetectionMethod: sourceItem.fraudDetectionMethod ?? '',
-    fraudAmount: sourceItem.fraudAmount ?? '',
-    actionTaken: sourceItem.actionTaken ?? '',
-    referredEntity: sourceItem.referredEntity ?? '',
-    fraudIndicatorType: sourceItem.fraudIndicator.fraudIndicatorType ?? '',
-    indicatorDescription: sourceItem.fraudIndicator.indicatorDescription ?? '',
-    occurrenceCount: String(sourceItem.fraudIndicator.occurrenceCount ?? ''),
-    fraudOfficerDecision: sourceItem.fraudIndicator.fraudOfficerDecision ?? '',
-  });
+  useEffect(() => {
+    if (isNewCase) {
+      setForm(emptyForm);
+      setAttachments([]);
+      setAssignmentHistory([]);
+      setHasLoadedDocuments(false);
+      setHasLoadedHistory(false);
+      setIsLoadingDocuments(false);
+      setIsLoadingHistory(false);
+      setIsLoadingCase(false);
+      setCaseError('');
+      setSaveMessage('');
+      return;
+    }
+
+    let isMounted = true;
+
+    async function loadCaseDetails() {
+      try {
+        setIsLoadingCase(true);
+        setCaseError('');
+        setSaveMessage('');
+        setHasLoadedDocuments(false);
+        setHasLoadedHistory(false);
+        setAttachments([]);
+        setAssignmentHistory([]);
+
+        // Load only the main case at first. Documents and history are loaded lazily
+        // when the user opens those wizard steps, so tab switching stays fast.
+        const caseData = await apiGet<BackendFraudCase>(`/api/cases/${caseId}`);
+
+        if (!isMounted) return;
+
+        setForm(mapBackendCaseToForm(caseData));
+      } catch (error) {
+        if (isMounted) {
+          setCaseError('Could not load case details from backend.');
+        }
+      } finally {
+        if (isMounted) {
+          setIsLoadingCase(false);
+        }
+      }
+    }
+
+    loadCaseDetails();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [caseId, isNewCase]);
 
   const currentStepIndex = stepOrder.indexOf(currentStep);
 
@@ -394,13 +588,196 @@ export default function CaseDetailsPage() {
     history: t.stepHistory,
   };
 
+  const backendStatusOptions = [
+    'New',
+    'Under Review',
+    'Under Investigation',
+    'Pending Information',
+    'Fraud Confirmed',
+    'Rejected',
+    'Closed',
+  ];
+
+  const getStatusLabel = (status: string) => {
+    const statusIndex = backendStatusOptions.indexOf(status);
+
+    if (language === 'ar' && statusIndex >= 0) {
+      return t.statusOptions[statusIndex] ?? status;
+    }
+
+    return status;
+  };
+
   const updateField = (field: keyof typeof form, value: string) => {
     setForm((current) => ({ ...current, [field]: value }));
+    setSaveMessage('');
+  };
+
+  const updateFormFromBackend = (updatedCase: BackendFraudCase) => {
+    setForm(mapBackendCaseToForm(updatedCase));
+  };
+
+  const reloadAssignmentHistory = async () => {
+    if (isNewCase || !caseId) return;
+
+    try {
+      setIsLoadingHistory(true);
+      const historyData = await apiGet<BackendAssignmentHistoryEntry[]>(`/api/cases/${caseId}/assignment-history`);
+      setAssignmentHistory(mapBackendHistoryToRows(historyData));
+      setHasLoadedHistory(true);
+    } catch (error) {
+      setAssignmentHistory([]);
+      setCaseError((current) => current || 'Assignment history could not be refreshed.');
+    } finally {
+      setIsLoadingHistory(false);
+    }
+  };
+
+  const reloadDocuments = async () => {
+    if (isNewCase || !caseId) return;
+
+    try {
+      setIsLoadingDocuments(true);
+      const documentsData = await apiGet<BackendDocument[]>(`/api/cases/${caseId}/documents`);
+      setAttachments(mapBackendDocumentsToAttachments(documentsData));
+      setHasLoadedDocuments(true);
+    } catch (error) {
+      setAttachments([]);
+      setCaseError((current) => current || 'Documents could not be refreshed.');
+    } finally {
+      setIsLoadingDocuments(false);
+    }
+  };
+
+  useEffect(() => {
+    if (currentStep === 'history' && !hasLoadedHistory && !isLoadingHistory) {
+      reloadAssignmentHistory();
+    }
+
+    if (currentStep === 'attachments' && !hasLoadedDocuments && !isLoadingDocuments) {
+      reloadDocuments();
+    }
+  }, [currentStep, hasLoadedDocuments, hasLoadedHistory, isLoadingDocuments, isLoadingHistory]);
+
+  const saveCurrentStep = async () => {
+    if (isNewCase || !caseId) return;
+
+    try {
+      setIsSavingCase(true);
+      setCaseError('');
+      setSaveMessage('');
+
+      if (currentStep === 'reporter') {
+        const updatedCase = await apiPatch<BackendFraudCase>(`/api/cases/${caseId}/reporter`, {
+          reporter_name: form.reporterName,
+          reporter_email: form.reporterEmail,
+          reporter_mobile: form.reporterMobile,
+          national_id_or_iqama: form.nationalIdOrIqama,
+        });
+        updateFormFromBackend(updatedCase);
+      }
+
+      if (currentStep === 'overview') {
+        const updatedCase = await apiPatch<BackendFraudCase>(`/api/cases/${caseId}/overview`, {
+          claim_id: form.claimId,
+          case_type: form.caseType,
+          case_source: form.caseSource,
+          insurance_type: form.insuranceType,
+          priority_level: form.priorityLevel,
+          suspected_amount: form.suspectedAmount || 0,
+          description: form.submissionDetails,
+          fraud_unit_notes: form.fraudUnitNotes,
+        });
+        updateFormFromBackend(updatedCase);
+      }
+
+      if (currentStep === 'indicators') {
+        const updatedCase = await apiPatch<BackendFraudCase>(`/api/cases/${caseId}/indicators`, {
+          fraud_indicator_type: form.fraudIndicatorType,
+          indicator_description: form.indicatorDescription,
+          occurrence_count: Number(form.occurrenceCount || 0),
+          fraud_officer_decision: form.fraudOfficerDecision,
+        });
+        updateFormFromBackend(updatedCase);
+      }
+
+      if (currentStep === 'fraudDetails') {
+        const updatedCase = await apiPatch<BackendFraudCase>(`/api/cases/${caseId}/confirmed-fraud`, {
+          claim_type: form.claimType,
+          fraud_confirmed_date: form.fraudConfirmedDate || null,
+          fraud_detection_method: form.fraudDetectionMethod,
+          fraud_amount: form.fraudAmount || 0,
+          action_taken: form.actionTaken,
+          referred_entity: form.referredEntity,
+        });
+        updateFormFromBackend(updatedCase);
+      }
+
+      if (currentStep === 'workflow') {
+        let updatedCase: BackendFraudCase | null = null;
+
+        if (form.caseStatus) {
+          updatedCase = await apiPatch<BackendFraudCase>(`/api/cases/${caseId}/status`, {
+            case_status: form.caseStatus,
+            closure_reason: form.closureReason,
+            closure_date: form.closureDate || null,
+          });
+        }
+
+        if (form.assignedUser) {
+          updatedCase = await apiPatch<BackendFraudCase>(`/api/cases/${caseId}/assign`, {
+            assigned_user: form.assignedUser,
+            assigned_by: form.assignedBy || 'Admin',
+            change_reason: form.reassignmentReason || 'Case assigned from case details',
+          });
+          await reloadAssignmentHistory();
+        }
+
+        if (updatedCase) {
+          updateFormFromBackend(updatedCase);
+        }
+      }
+
+      if (currentStep === 'attachments') {
+        await reloadDocuments();
+      }
+
+      setSaveMessage('Saved successfully.');
+    } catch (error) {
+      setCaseError('Could not save changes to backend.');
+    } finally {
+      setIsSavingCase(false);
+    }
+  };
+
+  const handleReleaseAssignment = async () => {
+    if (isNewCase || !caseId) return;
+
+    try {
+      setIsSavingCase(true);
+      setCaseError('');
+      setSaveMessage('');
+
+      const updatedCase = await apiPatch<BackendFraudCase>(`/api/cases/${caseId}/release-assignment`, {
+        released_by: form.assignedBy || 'Admin',
+        change_reason: form.reassignmentReason || 'Assignment released from case details',
+      });
+
+      updateFormFromBackend(updatedCase);
+      await reloadAssignmentHistory();
+      setSaveMessage('Assignment released successfully.');
+    } catch (error) {
+      setCaseError('Could not release assignment.');
+    } finally {
+      setIsSavingCase(false);
+    }
   };
 
   const goNext = () => {
+    // Move between wizard steps instantly. Saving is done only when the user clicks Save Changes.
     if (currentStepIndex < stepOrder.length - 1) {
       setCurrentStep(stepOrder[currentStepIndex + 1]);
+      setSaveMessage('');
     }
   };
 
@@ -410,14 +787,41 @@ export default function CaseDetailsPage() {
     }
   };
 
-  const handleFiles = (incomingFiles: FileList | null) => {
+  const handleFiles = async (incomingFiles: FileList | null) => {
     if (!incomingFiles) return;
-    const mapped = Array.from(incomingFiles).map((file, index) => ({
-      id: `${file.name}-${index}-${Date.now()}`,
-      fileName: file.name,
-      fileType: file.type || 'file',
-    }));
-    setAttachments((current) => [...current, ...mapped]);
+
+    if (isNewCase || !caseId) {
+      const mapped = Array.from(incomingFiles).map((file, index) => ({
+        id: `${file.name}-${index}-${Date.now()}`,
+        fileName: file.name,
+        fileType: file.type || 'file',
+      }));
+      setAttachments((current) => [...current, ...mapped]);
+      return;
+    }
+
+    try {
+      setIsSavingCase(true);
+      setCaseError('');
+      setSaveMessage('');
+
+      for (const file of Array.from(incomingFiles)) {
+        await apiPost<BackendDocument>(`/api/cases/${caseId}/documents`, {
+          file_name: file.name,
+          file_type: file.type || 'file',
+          file_url: '',
+          category: 'supporting_document',
+          uploaded_by: form.assignedBy || 'Admin',
+        });
+      }
+
+      await reloadDocuments();
+      setSaveMessage('Document metadata saved successfully.');
+    } catch (error) {
+      setCaseError('Could not save document metadata.');
+    } finally {
+      setIsSavingCase(false);
+    }
   };
 
   const removeAttachment = (idToRemove?: string) => {
@@ -427,18 +831,38 @@ export default function CaseDetailsPage() {
   return (
     <div dir={isArabic ? 'rtl' : 'ltr'}>
       <PageHeader
-        title={isNewCase ? t.titleNew : `${t.title} - ${sourceItem.id}`}
+        title={isNewCase ? t.titleNew : `${t.title} - ${form.id || caseId}`}
         subtitle={isNewCase ? t.subtitleNew : t.subtitle}
         action={
           <div className="actions-inline" style={{ gap: 12 }}>
-            {!isNewCase ? <button className="btn">{t.claim}</button> : null}
-            {!isNewCase ? <button className="btn">{t.releaseAssignment}</button> : null}
-            <button className="btn primary" type="button" onClick={() => navigate('/app/queue')}>
-              {t.saveChanges}
-            </button>
+            {!isNewCase ? <button className="btn" type="button">{t.claim}</button> : null}
+            {!isNewCase ? <button className="btn" type="button" onClick={handleReleaseAssignment} disabled={isSavingCase}>{t.releaseAssignment}</button> : null}
+            {!isNewCase ? (
+              <button className="btn primary" type="button" onClick={saveCurrentStep} disabled={isSavingCase}>
+                {isSavingCase ? 'Saving...' : t.saveChanges}
+              </button>
+            ) : null}
           </div>
         }
       />
+
+      {isLoadingCase ? (
+        <div className="card" style={{ marginBottom: 16 }}>
+          Loading case details from backend...
+        </div>
+      ) : null}
+
+      {caseError ? (
+        <div className="card" style={{ marginBottom: 16, color: '#b42318' }}>
+          {caseError}
+        </div>
+      ) : null}
+
+      {saveMessage ? (
+        <div className="card" style={{ marginBottom: 16, color: '#0d6c68' }}>
+          {saveMessage}
+        </div>
+      ) : null}
 
       <div className="card" style={{ marginBottom: 20 }}>
         <div
@@ -781,8 +1205,8 @@ export default function CaseDetailsPage() {
                 onChange={(e) => updateField('caseStatus', e.target.value)}
               >
                 <option value=""></option>
-                {t.statusOptions.map((status) => (
-                  <option key={status}>{status}</option>
+                {backendStatusOptions.map((status) => (
+                  <option key={status} value={status}>{getStatusLabel(status)}</option>
                 ))}
               </select>
             </label>
@@ -858,13 +1282,19 @@ export default function CaseDetailsPage() {
                 </div>
               </label>
 
+              {isLoadingDocuments ? (
+                <div className="card" style={{ marginTop: 16, marginBottom: 16 }}>
+                  Loading documents...
+                </div>
+              ) : null}
+
               <div className="activity-list top-gap">
                 {attachments.length > 0 ? (
                   attachments.map((attachment) => (
                     <div className="activity-item" key={attachment.id ?? attachment.fileName}>
                       <div>
                         <strong>{attachment.fileName}</strong>
-                        <span>{attachment.fileType}</span>
+                        <span>{attachment.category ? `${attachment.fileType} · ${attachment.category}` : attachment.fileType}</span>
                       </div>
                       <button className="btn" type="button" onClick={() => removeAttachment(attachment.id)}>
                         {t.remove}
@@ -884,8 +1314,14 @@ export default function CaseDetailsPage() {
 
         {currentStep === 'history' ? (
           <Table title={t.assignmentHistory} headers={[t.historyAssignedTo, t.historyDate, t.historyNotes]}>
-            {sourceItem.assignmentHistory.length > 0 ? (
-              sourceItem.assignmentHistory.map((entry, index) => (
+            {isLoadingHistory ? (
+              <tr>
+                <td colSpan={3} className="muted" style={{ textAlign: 'center', padding: '24px 16px' }}>
+                  Loading assignment history...
+                </td>
+              </tr>
+            ) : assignmentHistory.length > 0 ? (
+              assignmentHistory.map((entry, index) => (
                 <tr key={`${entry.changeDate}-${index}`}>
                   <td>{entry.newUser ?? t.unassigned}</td>
                   <td>{entry.changeDate}</td>
@@ -914,8 +1350,8 @@ export default function CaseDetailsPage() {
               {t.next}
             </button>
           ) : (
-            <button className="btn primary" type="button" onClick={() => navigate('/app/queue')}>
-              {t.saveChanges}
+            <button className="btn primary" type="button" onClick={saveCurrentStep} disabled={isSavingCase}>
+              {isSavingCase ? 'Saving...' : t.saveChanges}
             </button>
           )}
         </div>

@@ -1,10 +1,23 @@
 import { Link, useOutletContext } from 'react-router-dom';
-import { useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import PageHeader from '../../components/PageHeader';
 import StatCard from '../../components/StatCard';
 import { fraudCases } from '../../data/mockData';
 import Table from '../../components/Table';
 import type { AppLanguage } from '../../layout/AppLayout';
+import { apiGet } from '../../api';
+
+type DashboardSummary = {
+  total_cases: number;
+  new_cases: number;
+  cases_under_review: number;
+  cases_under_investigation: number;
+  confirmed_fraud_cases: number;
+  closed_cases: number;
+  unassigned_cases: number;
+  high_priority_cases: number;
+  suspected_amount: string;
+};
 
 type DashboardCopy = {
   eyebrow: string;
@@ -357,19 +370,95 @@ export default function DashboardPage() {
   const { language } = useOutletContext<{ language: AppLanguage }>();
   const t = useMemo(() => pageCopy[language], [language]);
   const isArabic = language === 'ar';
+    const [summary, setSummary] = useState<DashboardSummary | null>(null);
+  const [isLoadingSummary, setIsLoadingSummary] = useState(true);
+  const [summaryError, setSummaryError] = useState('');
 
-  const cards = useMemo(
+  useEffect(() => {
+    let isMounted = true;
+
+    async function loadDashboardSummary() {
+      try {
+        setIsLoadingSummary(true);
+        setSummaryError('');
+
+        const data = await apiGet<DashboardSummary>('/api/dashboard/summary');
+
+        if (isMounted) {
+          setSummary(data);
+        }
+      } catch (error) {
+        if (isMounted) {
+          setSummaryError('Could not load dashboard summary from backend.');
+        }
+      } finally {
+        if (isMounted) {
+          setIsLoadingSummary(false);
+        }
+      }
+    }
+
+    loadDashboardSummary();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  const formatNumber = (value?: number) => {
+    return value === undefined || value === null ? '0' : value.toLocaleString();
+  };
+
+  const formatMoney = (value?: string) => {
+    const numericValue = Number(value || 0);
+
+    if (numericValue >= 1000) {
+      return `SAR ${(numericValue / 1000).toFixed(0)}K`;
+    }
+
+    return `SAR ${numericValue.toLocaleString()}`;
+  };
+
+  const totalCasesValue = summary?.total_cases ?? 0;
+  const newCasesValue = summary?.new_cases ?? 0;
+  const casesUnderReviewValue = summary?.cases_under_review ?? 0;
+  const casesUnderInvestigationValue = summary?.cases_under_investigation ?? 0;
+  const confirmedFraudCasesValue = summary?.confirmed_fraud_cases ?? 0;
+  const closedCasesValue = summary?.closed_cases ?? 0;
+  const unassignedCasesValue = summary?.unassigned_cases ?? 0;
+  const highPriorityCasesValue = summary?.high_priority_cases ?? 0;
+  const suspectedAmountValue = summary?.suspected_amount ?? '0';
+
+    const cards = useMemo(
     () => [
-      { title: t.totalCases, value: '248', subtitle: t.totalCasesSubtitle },
-      { title: t.newCases, value: '19', subtitle: t.newCasesSubtitle },
-      { title: t.casesUnderReview, value: '26', subtitle: t.casesUnderReviewSubtitle },
-      { title: t.casesUnderInvestigation, value: '37', subtitle: t.casesUnderInvestigationSubtitle },
-      { title: t.confirmedFraudCases, value: '14', subtitle: t.confirmedFraudCasesSubtitle },
-      { title: t.closedCases, value: '52', subtitle: t.closedCasesSubtitle },
-      { title: t.unassignedCases, value: '8', subtitle: t.unassignedCasesSubtitle },
-      { title: t.highPriorityCases, value: '11', subtitle: t.highPriorityCasesSubtitle },
+      { title: t.totalCases, value: formatNumber(totalCasesValue), subtitle: t.totalCasesSubtitle },
+      { title: t.newCases, value: formatNumber(newCasesValue), subtitle: t.newCasesSubtitle },
+      { title: t.casesUnderReview, value: formatNumber(casesUnderReviewValue), subtitle: t.casesUnderReviewSubtitle },
+      {
+        title: t.casesUnderInvestigation,
+        value: formatNumber(casesUnderInvestigationValue),
+        subtitle: t.casesUnderInvestigationSubtitle,
+      },
+      {
+        title: t.confirmedFraudCases,
+        value: formatNumber(confirmedFraudCasesValue),
+        subtitle: t.confirmedFraudCasesSubtitle,
+      },
+      { title: t.closedCases, value: formatNumber(closedCasesValue), subtitle: t.closedCasesSubtitle },
+      { title: t.unassignedCases, value: formatNumber(unassignedCasesValue), subtitle: t.unassignedCasesSubtitle },
+      { title: t.highPriorityCases, value: formatNumber(highPriorityCasesValue), subtitle: t.highPriorityCasesSubtitle },
     ],
-    [t]
+    [
+      t,
+      totalCasesValue,
+      newCasesValue,
+      casesUnderReviewValue,
+      casesUnderInvestigationValue,
+      confirmedFraudCasesValue,
+      closedCasesValue,
+      unassignedCasesValue,
+      highPriorityCasesValue,
+    ]
   );
 
   const insuranceTypeData = useMemo(
@@ -507,25 +596,25 @@ export default function DashboardPage() {
           <div className="summary-grid">
             <div className="summary-item">
               <span className="muted small">{t.openCases}</span>
-              <strong>248</strong>
+              <strong>{formatNumber(totalCasesValue)}</strong>
               <span className="muted small">{t.acrossAllStatuses}</span>
             </div>
 
             <div className="summary-item">
               <span className="muted small">{t.underInvestigation}</span>
-              <strong>37</strong>
+              <strong>{formatNumber(casesUnderInvestigationValue)}</strong>
               <span className="muted small">{t.activeAnalystWorkload}</span>
             </div>
 
             <div className="summary-item">
               <span className="muted small">{t.unassigned}</span>
-              <strong>8</strong>
+              <strong>{formatNumber(unassignedCasesValue)}</strong>
               <span className="muted small">{t.needsImmediatePickup}</span>
             </div>
 
             <div className="summary-item">
               <span className="muted small">{t.suspectedAmount}</span>
-              <strong>SAR 95K</strong>
+              <strong>{formatMoney(suspectedAmountValue)}</strong>
               <span className="muted small">{t.highValueCasesInReview}</span>
             </div>
           </div>
@@ -722,6 +811,17 @@ export default function DashboardPage() {
       </div>
 
       <PageHeader eyebrow={t.eyebrow} title={t.recentCases} subtitle={t.recentCasesSubtitle} />
+      {isLoadingSummary ? (
+      <div className="card" style={{ marginBottom: 16 }}>
+        Loading dashboard data from backend...
+      </div>
+    ) : null}
+
+    {summaryError ? (
+      <div className="card" style={{ marginBottom: 16, color: '#b42318' }}>
+        {summaryError}
+      </div>
+    ) : null}
 
       <Table
         title={t.recentCasesTableTitle}

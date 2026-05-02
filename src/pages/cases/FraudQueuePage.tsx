@@ -1,11 +1,28 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link, useOutletContext } from 'react-router-dom';
 import PageHeader from '../../components/PageHeader';
 import Table from '../../components/Table';
-import { fraudCases } from '../../data/mockData';
+import { apiGet } from '../../api';
 import type { AppLanguage } from '../../layout/AppLayout';
 
 const CURRENT_USER = 'Fatimah Salem';
+
+type BackendFraudCase = {
+  id: number;
+  case_number: string;
+  claim_id: string | null;
+  case_type: string | null;
+  case_source: string | null;
+  priority_level: string | null;
+  case_status: string | null;
+  assigned_user: string | null;
+  case_entry_date: string | null;
+  insurance_type: string | null;
+  suspected_amount: string | null;
+  reporter_name: string | null;
+  reporter_email: string | null;
+  reporter_mobile: string | null;
+};
 
 type QueueCopy = {
   eyebrow: string;
@@ -261,6 +278,10 @@ export default function FraudQueuePage() {
   const t = useMemo(() => pageCopy[language], [language]);
   const isArabic = language === 'ar';
 
+  const [cases, setCases] = useState<BackendFraudCase[]>([]);
+  const [isLoadingCases, setIsLoadingCases] = useState(true);
+  const [casesError, setCasesError] = useState('');
+
   const [searchField, setSearchField] = useState<SearchField>('caseId');
   const [searchValue, setSearchValue] = useState('');
   const [quickFilter, setQuickFilter] = useState<string>('all');
@@ -268,19 +289,80 @@ export default function FraudQueuePage() {
   const [caseTypeFilter, setCaseTypeFilter] = useState('');
   const [dateRangeFilter, setDateRangeFilter] = useState('');
 
+  useEffect(() => {
+    let isMounted = true;
+
+    async function loadCases() {
+      try {
+        setIsLoadingCases(true);
+        setCasesError('');
+
+        const data = await apiGet<BackendFraudCase[]>('/api/cases');
+
+        if (isMounted) {
+          setCases(data);
+        }
+      } catch (error) {
+        if (isMounted) {
+          setCasesError('Could not load fraud cases from backend.');
+        }
+      } finally {
+        if (isMounted) {
+          setIsLoadingCases(false);
+        }
+      }
+    }
+
+    loadCases();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  const formatDate = (value: string | null) => {
+    if (!value) return '-';
+
+    const date = new Date(value);
+
+    if (Number.isNaN(date.getTime())) {
+      return value;
+    }
+
+    return date.toLocaleDateString('en-GB');
+  };
+
+  const formatAmount = (value: string | null) => {
+    const numericValue = Number(value || 0);
+    return `${numericValue.toLocaleString()} SAR`;
+  };
+
   const insuranceOptions = useMemo(
-    () => Array.from(new Set(fraudCases.map((item) => item.insuranceType))),
-    []
+    () =>
+      Array.from(
+        new Set(cases.map((item) => item.insurance_type).filter(Boolean))
+      ) as string[],
+    [cases]
   );
 
   const caseTypeOptions = useMemo(
-    () => Array.from(new Set(fraudCases.map((item) => item.caseType))),
-    []
+    () =>
+      Array.from(
+        new Set(cases.map((item) => item.case_type).filter(Boolean))
+      ) as string[],
+    [cases]
   );
 
   const dateOptions = useMemo(
-    () => Array.from(new Set(fraudCases.map((item) => item.caseEntryDate))),
-    []
+    () =>
+      Array.from(
+        new Set(
+          cases
+            .map((item) => formatDate(item.case_entry_date))
+            .filter((value) => value && value !== '-')
+        )
+      ),
+    [cases]
   );
 
   const searchFieldOptions = useMemo(
@@ -314,6 +396,7 @@ export default function FraudQueuePage() {
       if (value === 'Medium') return t.medium;
       if (value === 'Low') return t.low;
     }
+
     return value;
   };
 
@@ -327,6 +410,7 @@ export default function FraudQueuePage() {
       if (value === 'Rejected') return t.rejected;
       if (value === 'Closed') return t.closed;
     }
+
     return value;
   };
 
@@ -337,6 +421,7 @@ export default function FraudQueuePage() {
       if (value === 'Property') return t.property;
       if (value === 'Travel') return t.travel;
     }
+
     return value;
   };
 
@@ -348,6 +433,7 @@ export default function FraudQueuePage() {
       if (value === 'Document Mismatch') return t.documentMismatch;
       if (value === 'Identity Concern') return t.identityConcern;
     }
+
     return value;
   };
 
@@ -360,43 +446,59 @@ export default function FraudQueuePage() {
       if (value === 'Provider Audit') return t.providerAudit;
       if (value === 'Customer Care') return t.customerCare;
     }
+
     return value;
   };
 
   const filteredCases = useMemo(() => {
     const normalizedSearch = searchValue.trim().toLowerCase();
 
-    return fraudCases.filter((item) => {
-      const assignedValue = item.assignedUser ?? t.unassignedValue;
+    return cases.filter((item) => {
+      const caseNumber = item.case_number ?? '';
+      const claimId = item.claim_id ?? '';
+      const caseType = item.case_type ?? '';
+      const caseSource = item.case_source ?? '';
+      const priorityLevel = item.priority_level ?? '';
+      const caseStatus = item.case_status ?? '';
+      const assignedUser = item.assigned_user ?? '';
+      const insuranceType = item.insurance_type ?? '';
+      const caseEntryDate = formatDate(item.case_entry_date);
+      const reporterName = item.reporter_name ?? '';
+      const reporterEmail = item.reporter_email ?? '';
+      const reporterMobile = item.reporter_mobile ?? '';
 
-      if (quickFilter === 'unassigned' && item.assignedUser) return false;
-      if (quickFilter === 'assignedToMe' && item.assignedUser !== CURRENT_USER) return false;
-      if (quickFilter === 'highPriority' && item.priorityLevel !== 'High') return false;
-      if (quickFilter === 'underReview' && item.caseStatus !== 'Under Review') return false;
-      if (quickFilter === 'underInvestigation' && item.caseStatus !== 'Under Investigation') return false;
-      if (quickFilter === 'fraudConfirmed' && item.caseStatus !== 'Fraud Confirmed') return false;
-      if (quickFilter === 'closed' && item.caseStatus !== 'Closed') return false;
+      const assignedValue = assignedUser || t.unassignedValue;
 
-      if (insuranceTypeFilter && item.insuranceType !== insuranceTypeFilter) return false;
-      if (caseTypeFilter && item.caseType !== caseTypeFilter) return false;
-      if (dateRangeFilter && item.caseEntryDate !== dateRangeFilter) return false;
+      if (quickFilter === 'unassigned' && assignedUser) return false;
+      if (quickFilter === 'assignedToMe' && assignedUser !== CURRENT_USER) return false;
+      if (quickFilter === 'highPriority' && priorityLevel !== 'High') return false;
+      if (quickFilter === 'underReview' && caseStatus !== 'Under Review') return false;
+      if (quickFilter === 'underInvestigation' && caseStatus !== 'Under Investigation') return false;
+      if (quickFilter === 'fraudConfirmed' && caseStatus !== 'Fraud Confirmed') return false;
+      if (quickFilter === 'closed' && caseStatus !== 'Closed') return false;
+
+      if (insuranceTypeFilter && insuranceType !== insuranceTypeFilter) return false;
+      if (caseTypeFilter && caseType !== caseTypeFilter) return false;
+      if (dateRangeFilter && caseEntryDate !== dateRangeFilter) return false;
 
       if (!normalizedSearch) return true;
 
       const searchMap: Record<SearchField, string> = {
-        caseId: item.id,
-        claimId: item.claimId,
-        reporterName: item.reporterName,
-        reporterEmail: item.reporterEmail,
-        reporterMobile: item.reporterMobile,
+        caseId: caseNumber,
+        claimId,
+        reporterName,
+        reporterEmail,
+        reporterMobile,
       };
 
       return (
         searchMap[searchField].toLowerCase().includes(normalizedSearch) ||
-        assignedValue.toLowerCase().includes(normalizedSearch)
+        assignedValue.toLowerCase().includes(normalizedSearch) ||
+        caseSource.toLowerCase().includes(normalizedSearch)
       );
     });
   }, [
+    cases,
     caseTypeFilter,
     dateRangeFilter,
     insuranceTypeFilter,
@@ -418,6 +520,18 @@ export default function FraudQueuePage() {
           </Link>
         }
       />
+
+      {isLoadingCases ? (
+        <div className="card" style={{ marginBottom: 16 }}>
+          Loading fraud cases from backend...
+        </div>
+      ) : null}
+
+      {casesError ? (
+        <div className="card" style={{ marginBottom: 16, color: '#b42318' }}>
+          {casesError}
+        </div>
+      ) : null}
 
       <div className="card queue-filters" style={{ marginBottom: 20 }}>
         <div style={{ gridColumn: '1 / -1' }}>
@@ -505,39 +619,43 @@ export default function FraudQueuePage() {
         ]}
       >
         {filteredCases.length > 0 ? (
-          filteredCases.map((item) => (
-            <tr key={item.id}>
-              <td>
-                <Link className="text-link" to={`/app/cases/${item.id}`}>
-                  {item.id}
-                </Link>
-              </td>
-              <td>{item.claimId}</td>
-              <td>{translateCaseType(item.caseType)}</td>
-              <td>{translateCaseSource(item.caseSource)}</td>
-              <td>
-                <span className={`badge ${item.priorityLevel.toLowerCase()}`}>
-                  {translatePriority(item.priorityLevel)}
-                </span>
-              </td>
-              <td>{translateStatus(item.caseStatus)}</td>
-              <td>{item.assignedUser ?? t.unassignedValue}</td>
-              <td>{item.caseEntryDate}</td>
-              <td>{translateInsuranceType(item.insuranceType)}</td>
-              <td>{item.suspectedAmount}</td>
-              <td>
-                <div className="actions-inline" style={{ gap: 8, flexWrap: 'wrap' }}>
-                  <Link className="mini-btn primary" to={`/app/cases/${item.id}`}>
-                    {t.openCase}
+          filteredCases.map((item) => {
+            const priorityLevel = item.priority_level ?? '-';
+
+            return (
+              <tr key={item.id}>
+                <td>
+                  <Link className="text-link" to={`/app/cases/${item.case_number}`}>
+                    {item.case_number}
                   </Link>
-                </div>
-              </td>
-            </tr>
-          ))
+                </td>
+                <td>{item.claim_id ?? '-'}</td>
+                <td>{translateCaseType(item.case_type ?? '-')}</td>
+                <td>{translateCaseSource(item.case_source ?? '-')}</td>
+                <td>
+                  <span className={`badge ${priorityLevel.toLowerCase()}`}>
+                    {translatePriority(priorityLevel)}
+                  </span>
+                </td>
+                <td>{translateStatus(item.case_status ?? '-')}</td>
+                <td>{item.assigned_user || t.unassignedValue}</td>
+                <td>{formatDate(item.case_entry_date)}</td>
+                <td>{translateInsuranceType(item.insurance_type ?? '-')}</td>
+                <td>{formatAmount(item.suspected_amount)}</td>
+                <td>
+                  <div className="actions-inline" style={{ gap: 8, flexWrap: 'wrap' }}>
+                    <Link className="mini-btn primary" to={`/app/cases/${item.case_number}`}>
+                      {t.openCase}
+                    </Link>
+                  </div>
+                </td>
+              </tr>
+            );
+          })
         ) : (
           <tr>
             <td colSpan={11} className="muted" style={{ textAlign: 'center', padding: '24px 16px' }}>
-              {t.noResults}
+              {isLoadingCases ? 'Loading...' : t.noResults}
             </td>
           </tr>
         )}
