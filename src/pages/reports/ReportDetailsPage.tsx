@@ -43,11 +43,13 @@ type ReportPageCopy = {
   eyebrow: string;
   previewSubtitle: string;
   confirmedFraudSubtitle: string;
+  fraudIndicatorsSubtitle: string;
   exportExcel: string;
   resetFilters: string;
   loading: string;
   error: string;
   confirmedFraudError: string;
+  fraudIndicatorsError: string;
   noRows: string;
   filterCaseId: string;
   filterClaimId: string;
@@ -92,11 +94,13 @@ const pageCopy: Record<AppLanguage, ReportPageCopy> = {
     eyebrow: 'Report',
     previewSubtitle: 'All submitted fraud cases excluding draft cases.',
     confirmedFraudSubtitle: 'All confirmed fraud cases where the case type is Fraud Confirmed.',
+    fraudIndicatorsSubtitle: 'All open and closed cases for fraud indicator review. Draft cases are excluded.',
     exportExcel: 'Export Excel',
     resetFilters: 'Reset Filters',
     loading: 'Loading report data...',
     error: 'Could not load fraud cases report from backend.',
     confirmedFraudError: 'Could not load confirmed fraud report from backend.',
+    fraudIndicatorsError: 'Could not load fraud indicators report from backend.',
     noRows: 'No matching cases found.',
     filterCaseId: 'Filter Case Id',
     filterClaimId: 'Filter Claim Id',
@@ -145,11 +149,13 @@ const pageCopy: Record<AppLanguage, ReportPageCopy> = {
     eyebrow: 'تقرير',
     previewSubtitle: 'جميع بلاغات الاحتيال المعتمدة باستثناء البلاغات المسودة.',
     confirmedFraudSubtitle: 'جميع البلاغات التي تم تصنيف نوع البلاغ فيها كاحتيال مؤكد.',
+    fraudIndicatorsSubtitle: 'جميع البلاغات المفتوحة والمغلقة لمراجعة مؤشرات الاحتيال، مع استبعاد المسودات.',
     exportExcel: 'تصدير Excel',
     resetFilters: 'إعادة ضبط الفلاتر',
     loading: 'جاري تحميل بيانات التقرير...',
     error: 'تعذر تحميل تقرير البلاغات من الخادم.',
     confirmedFraudError: 'تعذر تحميل تقرير البلاغات المثبتة احتيال من الخادم.',
+    fraudIndicatorsError: 'تعذر تحميل تقرير مؤشرات الاحتيال من الخادم.',
     noRows: 'لا توجد بلاغات مطابقة.',
     filterCaseId: 'تصفية رقم البلاغ',
     filterClaimId: 'تصفية رقم المطالبة',
@@ -270,9 +276,25 @@ export default function ReportDetailsPage() {
   const rawTitle = decodeURIComponent(reportName ?? 'Fraud Cases Report');
   const reportKey = routeToReportKey[rawTitle] ?? 'fraudCases';
   const isConfirmedFraudReport = reportKey === 'confirmedFraud';
-  const reportEndpoint = isConfirmedFraudReport ? '/api/reports/confirmed-fraud' : '/api/reports/fraud-cases';
-  const reportSubtitle = isConfirmedFraudReport ? t.confirmedFraudSubtitle : t.previewSubtitle;
-  const reportError = isConfirmedFraudReport ? t.confirmedFraudError : t.error;
+  const isFraudIndicatorsReport = reportKey === 'fraudIndicators';
+
+  const reportEndpoint = isConfirmedFraudReport
+    ? '/api/reports/confirmed-fraud'
+    : isFraudIndicatorsReport
+      ? '/api/reports/fraud-indicators'
+      : '/api/reports/fraud-cases';
+
+  const reportSubtitle = isConfirmedFraudReport
+    ? t.confirmedFraudSubtitle
+    : isFraudIndicatorsReport
+      ? t.fraudIndicatorsSubtitle
+      : t.previewSubtitle;
+
+  const reportError = isConfirmedFraudReport
+    ? t.confirmedFraudError
+    : isFraudIndicatorsReport
+      ? t.fraudIndicatorsError
+      : t.error;
 
   const [filters, setFilters] = useState<FiltersState>(initialFilters);
   const [reportRows, setReportRows] = useState<FraudCaseReportRow[]>([]);
@@ -396,7 +418,15 @@ export default function ReportDetailsPage() {
       translateInsuranceType(item.insurance_type),
     ]);
 
-    downloadCsv(isConfirmedFraudReport ? 'confirmed-fraud-report.csv' : 'fraud-cases-report.csv', headers, excelRows);
+    downloadCsv(
+      isConfirmedFraudReport
+        ? 'confirmed-fraud-report.csv'
+        : isFraudIndicatorsReport
+          ? 'fraud-indicators-report.csv'
+          : 'fraud-cases-report.csv',
+      headers,
+      excelRows
+    );
   };
 
   const rows = useMemo(() => {

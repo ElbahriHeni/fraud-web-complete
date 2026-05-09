@@ -1086,6 +1086,38 @@ app.get("/api/reports/confirmed-fraud", async (req, res) => {
   }
 });
 
+
+app.get("/api/reports/fraud-indicators", async (req, res) => {
+  try {
+    const result = await pool.query(`
+      SELECT
+        case_number AS case_id,
+        claim_id,
+        case_entry_date,
+        case_source,
+        case_type,
+        priority_level,
+        case_status,
+        fraud_unit_notes,
+        closure_date,
+        closure_reason,
+        suspected_amount,
+        insurance_type
+      FROM fraud_cases
+      WHERE case_status IN ('Open', 'Closed')
+        AND case_type IN ('Fraud Confirmed', 'Fraud Suspected', 'احتيال مؤكد', 'اشتباه الاحتيال')
+      ORDER BY case_entry_date DESC NULLS LAST, created_at DESC
+    `);
+
+    res.json(result.rows);
+  } catch (error) {
+    res.status(500).json({
+      message: "Failed to fetch fraud indicators report",
+      error: error.message,
+    });
+  }
+});
+
 app.get("/api/dashboard/summary", async (req, res) => {
   try {
     const result = await pool.query(`
