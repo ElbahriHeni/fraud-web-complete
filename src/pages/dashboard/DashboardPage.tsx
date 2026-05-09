@@ -2,21 +2,30 @@ import { Link, useOutletContext } from 'react-router-dom';
 import { useEffect, useMemo, useState } from 'react';
 import PageHeader from '../../components/PageHeader';
 import StatCard from '../../components/StatCard';
-import { fraudCases } from '../../data/mockData';
 import Table from '../../components/Table';
 import type { AppLanguage } from '../../layout/AppLayout';
 import { apiGet } from '../../api';
 
-type DashboardSummary = {
-  total_cases: number;
-  new_cases: number;
-  cases_under_review: number;
-  cases_under_investigation: number;
-  confirmed_fraud_cases: number;
-  closed_cases: number;
-  unassigned_cases: number;
-  high_priority_cases: number;
-  suspected_amount: string;
+type BackendFraudCase = {
+  id: number;
+  case_number: string;
+  claim_id: string | null;
+  case_entry_date: string | null;
+  case_source: string | null;
+  case_source_other: string | null;
+  case_type: string | null;
+  priority_level: string | null;
+  case_status: string | null;
+  fraud_unit_notes: string | null;
+  closure_date: string | null;
+  closure_reason: string | null;
+  suspected_amount: string | number | null;
+  fraud_amount: string | number | null;
+  insurance_type: string | null;
+  claim_status: string | null;
+  risk_level: string | null;
+  created_at: string | null;
+  assigned_user: string | null;
 };
 
 type DashboardCopy = {
@@ -24,554 +33,441 @@ type DashboardCopy = {
   title: string;
   subtitle: string;
   generateReport: string;
+  reviewQueue: string;
 
   overviewEyebrow: string;
   overviewTitle: string;
   overviewSubtitle: string;
-  reviewQueue: string;
-
-  openCases: string;
-  acrossAllStatuses: string;
-  underInvestigation: string;
-  activeAnalystWorkload: string;
-  unassigned: string;
-  needsImmediatePickup: string;
-  suspectedAmount: string;
-  highValueCasesInReview: string;
+  totalOperationalCases: string;
+  openOperationalCases: string;
+  closedOperationalCases: string;
+  totalFraudAmount: string;
+  allCasesIncludingDrafts: string;
+  activeCaseWorkload: string;
+  completedCases: string;
+  fraudExposure: string;
 
   totalCases: string;
   totalCasesSubtitle: string;
-  newCases: string;
-  newCasesSubtitle: string;
-  casesUnderReview: string;
-  casesUnderReviewSubtitle: string;
-  casesUnderInvestigation: string;
-  casesUnderInvestigationSubtitle: string;
-  confirmedFraudCases: string;
-  confirmedFraudCasesSubtitle: string;
+  draftCases: string;
+  draftCasesSubtitle: string;
+  openCases: string;
+  openCasesSubtitle: string;
   closedCases: string;
   closedCasesSubtitle: string;
-  unassignedCases: string;
-  unassignedCasesSubtitle: string;
+  confirmedFraudCases: string;
+  confirmedFraudCasesSubtitle: string;
+  suspendedClaims: string;
+  suspendedClaimsSubtitle: string;
   highPriorityCases: string;
   highPriorityCasesSubtitle: string;
   liveWorkloadSnapshot: string;
 
   casesByStatus: string;
   casesByStatusSubtitle: string;
-  balanced: string;
-
   casesByPriority: string;
   casesByPrioritySubtitle: string;
-  attention: string;
-
   casesByInsuranceType: string;
   casesByInsuranceTypeSubtitle: string;
-
   casesByCaseType: string;
   casesByCaseTypeSubtitle: string;
 
-  teamActivity: string;
-  recentAnalystMovement: string;
-  teamPerformance: string;
-  teamPerformanceSubtitle: string;
-  casesClosedLabel: string;
-  avgTimeLabel: string;
-
-  averageCaseProcessingTime: string;
-  averageCaseProcessingTimeSubtitle: string;
-  avgProcessingTimeValue: string;
-  thisWeek: string;
-  thisMonth: string;
-  highPriorityProcessing: string;
-  thisWeekValue: string;
-  thisMonthValue: string;
-  highPriorityProcessingValue: string;
+  draft: string;
+  open: string;
+  closed: string;
+  high: string;
+  medium: string;
+  low: string;
+  motor: string;
+  medical: string;
+  life: string;
+  general: string;
+  fraudConfirmed: string;
+  fraudSuspected: string;
+  violation: string;
+  other: string;
 
   recentCases: string;
   recentCasesSubtitle: string;
   recentCasesTableTitle: string;
   recentCasesTableSubtitle: string;
-
   caseId: string;
   claimId: string;
   caseType: string;
   priority: string;
   status: string;
-  assignedUser: string;
-
-  newLabel: string;
-  underReviewLabel: string;
-  underInvestigationLabel: string;
-  fraudConfirmedLabel: string;
-
-  highLabel: string;
-  mediumLabel: string;
-  lowLabel: string;
-
-  motor: string;
-  medical: string;
-  property: string;
-  travel: string;
-
-  fraudSuspected: string;
-  fraudConfirmedType: string;
-  documentMismatch: string;
-  identityConcern: string;
-
-  whistleblowing: string;
-  internal: string;
-  providerAudit: string;
-  customerCare: string;
-
-  unassignedValue: string;
-
-  activity1Name: string;
-  activity1Text: string;
-  activity2Name: string;
-  activity2Text: string;
-  activity3Name: string;
-  activity3Text: string;
+  insuranceType: string;
+  caseEntryDate: string;
+  amount: string;
+  noCases: string;
+  loadingDashboard: string;
+  errorLoadingDashboard: string;
 };
 
 const pageCopy: Record<AppLanguage, DashboardCopy> = {
   en: {
     eyebrow: 'Workspace',
     title: 'Dashboard Screen',
-    subtitle: 'Provide a high-level overview of fraud cases, workload, and performance indicators.',
+    subtitle: 'A live overview of fraud cases, claim suspensions, confirmed fraud, and operational workload.',
     generateReport: 'Generate Report',
-
-    overviewEyebrow: 'Overview',
-    overviewTitle: "Today's operations snapshot",
-    overviewSubtitle:
-      'A simpler view of queue health, active investigations, and immediate review pressure.',
     reviewQueue: 'Review Queue',
 
-    openCases: 'Open Cases',
-    acrossAllStatuses: 'Across all statuses',
-    underInvestigation: 'Under Investigation',
-    activeAnalystWorkload: 'Active analyst workload',
-    unassigned: 'Unassigned',
-    needsImmediatePickup: 'Needs immediate pickup',
-    suspectedAmount: 'Suspected Amount',
-    highValueCasesInReview: 'High-value cases in review',
+    overviewEyebrow: 'Overview',
+    overviewTitle: "Today's fraud operations snapshot",
+    overviewSubtitle: 'Updated to match the current case lifecycle: Draft, Open, Closed, claim suspension, and fraud indicators.',
+    totalOperationalCases: 'Total Cases',
+    openOperationalCases: 'Open Cases',
+    closedOperationalCases: 'Closed Cases',
+    totalFraudAmount: 'Fraud Amount',
+    allCasesIncludingDrafts: 'Including drafts',
+    activeCaseWorkload: 'Active workload',
+    completedCases: 'Closed workload',
+    fraudExposure: 'Confirmed / suspected exposure',
 
     totalCases: 'Total Cases',
-    totalCasesSubtitle: '+12 this week',
-    newCases: 'New Cases',
-    newCasesSubtitle: 'Awaiting assignment',
-    casesUnderReview: 'Cases Under Review',
-    casesUnderReviewSubtitle: 'Pending analyst assessment',
-    casesUnderInvestigation: 'Cases Under Investigation',
-    casesUnderInvestigationSubtitle: 'Active workload',
-    confirmedFraudCases: 'Confirmed Fraud Cases',
-    confirmedFraudCasesSubtitle: 'This month',
+    totalCasesSubtitle: 'All cases including drafts',
+    draftCases: 'Draft Cases',
+    draftCasesSubtitle: 'Saved but not submitted',
+    openCases: 'Open Cases',
+    openCasesSubtitle: 'Submitted and editable',
     closedCases: 'Closed Cases',
-    closedCasesSubtitle: 'Resolved and completed',
-    unassignedCases: 'Unassigned Cases',
-    unassignedCasesSubtitle: 'Shared queue',
+    closedCasesSubtitle: 'Locked unless reopened',
+    confirmedFraudCases: 'Confirmed Fraud Cases',
+    confirmedFraudCasesSubtitle: 'Case type = Fraud Confirmed',
+    suspendedClaims: 'Suspended Claims',
+    suspendedClaimsSubtitle: 'Claim status = Suspended',
     highPriorityCases: 'High Priority Cases',
-    highPriorityCasesSubtitle: 'Immediate review',
-    liveWorkloadSnapshot: 'Live workload snapshot',
+    highPriorityCasesSubtitle: 'Priority = High',
+    liveWorkloadSnapshot: 'Live database snapshot',
 
     casesByStatus: 'Cases By Status',
-    casesByStatusSubtitle: 'Work distribution across the operating funnel.',
-    balanced: 'Balanced',
-
+    casesByStatusSubtitle: 'Distribution by the current lifecycle statuses.',
     casesByPriority: 'Cases By Priority',
-    casesByPrioritySubtitle: 'Urgency mix used for daily staffing and handoff decisions.',
-    attention: 'Attention',
-
+    casesByPrioritySubtitle: 'Priority distribution for all cases.',
     casesByInsuranceType: 'Cases By Insurance Type',
-    casesByInsuranceTypeSubtitle: 'Distribution of cases across insurance lines.',
-
+    casesByInsuranceTypeSubtitle: 'Distribution by insurance line.',
     casesByCaseType: 'Cases By Case Type',
-    casesByCaseTypeSubtitle: 'Case mix by fraud reporting category.',
+    casesByCaseTypeSubtitle: 'Fraud reporting category mix.',
 
-    teamActivity: 'Team Activity',
-    recentAnalystMovement: 'Recent analyst movement',
-    teamPerformance: 'Team Performance',
-    teamPerformanceSubtitle: 'Closed cases by analyst with average time per case shown inside each bar.',
-    casesClosedLabel: 'Cases Closed',
-    avgTimeLabel: 'Avg Time',
-
-    averageCaseProcessingTime: 'Average Case Processing Time',
-    averageCaseProcessingTimeSubtitle: 'Average elapsed handling time for fraud cases.',
-    avgProcessingTimeValue: '5.2 days',
-    thisWeek: 'This Week',
-    thisMonth: 'This Month',
-    highPriorityProcessing: 'High Priority Cases',
-    thisWeekValue: '4.8 days',
-    thisMonthValue: '5.2 days',
-    highPriorityProcessingValue: '3.1 days',
+    draft: 'Draft',
+    open: 'Open',
+    closed: 'Closed',
+    high: 'High',
+    medium: 'Medium',
+    low: 'Low',
+    motor: 'Motor',
+    medical: 'Medical',
+    life: 'Life',
+    general: 'General',
+    fraudConfirmed: 'Fraud Confirmed',
+    fraudSuspected: 'Fraud Suspected',
+    violation: 'Violation',
+    other: 'Other',
 
     recentCases: 'Recent Cases',
-    recentCasesSubtitle: 'Quick snapshot from the shared queue.',
-    recentCasesTableTitle: 'Recent cases in motion',
-    recentCasesTableSubtitle: 'The latest items surfaced for daily review.',
-
+    recentCasesSubtitle: 'Latest cases created or updated in the fraud system.',
+    recentCasesTableTitle: 'Recent cases',
+    recentCasesTableSubtitle: 'A quick view of the latest fraud case records.',
     caseId: 'Case Id',
     claimId: 'Claim Id',
     caseType: 'Case Type',
     priority: 'Priority',
     status: 'Status',
-    assignedUser: 'Assigned User',
-
-    newLabel: 'New',
-    underReviewLabel: 'Under Review',
-    underInvestigationLabel: 'Under Investigation',
-    fraudConfirmedLabel: 'Fraud Confirmed',
-
-    highLabel: 'High',
-    mediumLabel: 'Medium',
-    lowLabel: 'Low',
-
-    motor: 'Motor',
-    medical: 'Medical',
-    property: 'Property',
-    travel: 'Travel',
-
-    fraudSuspected: 'Fraud Suspected',
-    fraudConfirmedType: 'Fraud Confirmed',
-    documentMismatch: 'Document Mismatch',
-    identityConcern: 'Identity Concern',
-
-    whistleblowing: 'Whistleblowing',
-    internal: 'Internal',
-    providerAudit: 'Provider Audit',
-    customerCare: 'Customer Care',
-
-    unassignedValue: 'Unassigned',
-
-    activity1Name: 'Fatimah Salem',
-    activity1Text: 'Closed invoice mismatch review and escalated legal referral',
-    activity2Name: 'Mohammed Hassan',
-    activity2Text: 'Moved one motor violation into Under Review',
-    activity3Name: 'Noura Khaled',
-    activity3Text: 'Requested supporting attachments for a pending property case',
+    insuranceType: 'Insurance Type',
+    caseEntryDate: 'Case Entry Date',
+    amount: 'Fraud Amount',
+    noCases: 'No cases found.',
+    loadingDashboard: 'Loading dashboard data from backend...',
+    errorLoadingDashboard: 'Could not load dashboard data from backend.',
   },
   ar: {
     eyebrow: 'مساحة العمل',
     title: 'شاشة لوحة التحكم',
-    subtitle: 'توفير نظرة عامة عالية المستوى على بلاغات الاحتيال، حجم العمل، ومؤشرات الأداء.',
+    subtitle: 'نظرة مباشرة على البلاغات، المطالبات المعلقة، الاحتيال المؤكد، وعبء العمل التشغيلي.',
     generateReport: 'إنشاء تقرير',
-
-    overviewEyebrow: 'نظرة عامة',
-    overviewTitle: 'ملخص عمليات اليوم',
-    overviewSubtitle: 'عرض مبسط لصحة قائمة العمل، والتحقيقات النشطة، والضغط الفوري على المراجعة.',
     reviewQueue: 'مراجعة القائمة',
 
-    openCases: 'إجمالي البلاغات المفتوحة',
-    acrossAllStatuses: 'عبر جميع الحالات',
-    underInvestigation: 'البلاغات قيد التحقيق',
-    activeAnalystWorkload: 'عبء العمل النشط للمحللين',
-    unassigned: 'البلاغات غير المعيّنة',
-    needsImmediatePickup: 'تحتاج إلى تعيين فوري',
-    suspectedAmount: 'المبلغ محل الاشتباه',
-    highValueCasesInReview: 'بلاغات عالية القيمة قيد المراجعة',
+    overviewEyebrow: 'نظرة عامة',
+    overviewTitle: 'ملخص عمليات مكافحة الاحتيال اليوم',
+    overviewSubtitle: 'تم تحديثها لتتوافق مع دورة حياة البلاغ الحالية: مسودة، مفتوح، مغلق، تعليق المطالبة، ومؤشرات الاحتيال.',
+    totalOperationalCases: 'إجمالي البلاغات',
+    openOperationalCases: 'البلاغات المفتوحة',
+    closedOperationalCases: 'البلاغات المغلقة',
+    totalFraudAmount: 'المبلغ المرتبط بالاحتيال',
+    allCasesIncludingDrafts: 'بما في ذلك المسودات',
+    activeCaseWorkload: 'عبء العمل النشط',
+    completedCases: 'البلاغات المنجزة',
+    fraudExposure: 'قيمة الاحتيال المؤكد أو المشتبه به',
 
     totalCases: 'إجمالي البلاغات',
-    totalCasesSubtitle: '+12 هذا الأسبوع',
-    newCases: 'البلاغات الجديدة',
-    newCasesSubtitle: 'بانتظار التعيين',
-    casesUnderReview: 'البلاغات قيد المراجعة',
-    casesUnderReviewSubtitle: 'بانتظار تقييم المحلل',
-    casesUnderInvestigation: 'البلاغات قيد التحقيق',
-    casesUnderInvestigationSubtitle: 'عبء العمل النشط',
-    confirmedFraudCases: 'البلاغات المؤكدة احتيال',
-    confirmedFraudCasesSubtitle: 'خلال هذا الشهر',
+    totalCasesSubtitle: 'كل البلاغات بما فيها المسودات',
+    draftCases: 'البلاغات المسودة',
+    draftCasesSubtitle: 'محفوظة ولم يتم تقديمها',
+    openCases: 'البلاغات المفتوحة',
+    openCasesSubtitle: 'مقدمة وقابلة للتعديل',
     closedCases: 'البلاغات المغلقة',
-    closedCasesSubtitle: 'تمت معالجتها وإغلاقها',
-    unassignedCases: 'البلاغات غير المعيّنة',
-    unassignedCasesSubtitle: 'القائمة المشتركة',
+    closedCasesSubtitle: 'مقفلة ما لم تتم إعادة فتحها',
+    confirmedFraudCases: 'البلاغات المثبتة احتيال',
+    confirmedFraudCasesSubtitle: 'نوع البلاغ = احتيال مؤكد',
+    suspendedClaims: 'المطالبات المعلقة',
+    suspendedClaimsSubtitle: 'حالة المطالبة = معلق',
     highPriorityCases: 'البلاغات عالية الأولوية',
-    highPriorityCasesSubtitle: 'تتطلب مراجعة فورية',
-    liveWorkloadSnapshot: 'لقطة مباشرة لعبء العمل',
+    highPriorityCasesSubtitle: 'الأولوية = عالية',
+    liveWorkloadSnapshot: 'لقطة مباشرة من قاعدة البيانات',
 
     casesByStatus: 'البلاغات حسب الحالة',
-    casesByStatusSubtitle: 'توزيع العمل عبر مراحل سير المعالجة.',
-    balanced: 'متوازن',
-
+    casesByStatusSubtitle: 'توزيع البلاغات حسب دورة الحياة الحالية.',
     casesByPriority: 'البلاغات حسب الأولوية',
-    casesByPrioritySubtitle: 'مزيج الأولويات المستخدم في التوزيع اليومي واتخاذ قرارات الإحالة.',
-    attention: 'يتطلب انتباه',
-
+    casesByPrioritySubtitle: 'توزيع الأولويات لكل البلاغات.',
     casesByInsuranceType: 'البلاغات حسب نوع التأمين',
-    casesByInsuranceTypeSubtitle: 'توزيع البلاغات حسب خطوط التأمين.',
-
+    casesByInsuranceTypeSubtitle: 'توزيع البلاغات حسب نوع التأمين.',
     casesByCaseType: 'البلاغات حسب نوع البلاغ',
-    casesByCaseTypeSubtitle: 'مزيج البلاغات حسب فئة الإبلاغ عن الاحتيال.',
+    casesByCaseTypeSubtitle: 'توزيع البلاغات حسب فئة الاشتباه أو المخالفة.',
 
-    teamActivity: 'أداء الفريق',
-    recentAnalystMovement: 'آخر تحركات المحللين',
-    teamPerformance: 'أداء أعضاء الفريق',
-    teamPerformanceSubtitle: 'عدد البلاغات المغلقة لكل محلل مع متوسط الزمن داخل كل شريط.',
-    casesClosedLabel: 'البلاغات المغلقة',
-    avgTimeLabel: 'متوسط الزمن',
-
-    averageCaseProcessingTime: 'متوسط زمن معالجة البلاغ',
-    averageCaseProcessingTimeSubtitle: 'متوسط الزمن المستغرق لمعالجة بلاغات الاحتيال.',
-    avgProcessingTimeValue: '5.2 أيام',
-    thisWeek: 'هذا الأسبوع',
-    thisMonth: 'هذا الشهر',
-    highPriorityProcessing: 'البلاغات عالية الأولوية',
-    thisWeekValue: '4.8 أيام',
-    thisMonthValue: '5.2 أيام',
-    highPriorityProcessingValue: '3.1 أيام',
+    draft: 'مسودة',
+    open: 'مفتوح',
+    closed: 'مغلق',
+    high: 'عالية',
+    medium: 'متوسطة',
+    low: 'منخفضة',
+    motor: 'مركبات',
+    medical: 'طبي',
+    life: 'حياة',
+    general: 'عام',
+    fraudConfirmed: 'احتيال مؤكد',
+    fraudSuspected: 'اشتباه الاحتيال',
+    violation: 'مخالفة',
+    other: 'أخرى',
 
     recentCases: 'البلاغات الحديثة',
-    recentCasesSubtitle: 'عرض سريع لأحدث البلاغات في القائمة المشتركة.',
-    recentCasesTableTitle: 'البلاغات الحديثة قيد المتابعة',
-    recentCasesTableSubtitle: 'أحدث العناصر التي ظهرت للمراجعة اليومية.',
-
+    recentCasesSubtitle: 'آخر البلاغات التي تم إنشاؤها أو تحديثها في نظام مكافحة الاحتيال.',
+    recentCasesTableTitle: 'أحدث البلاغات',
+    recentCasesTableSubtitle: 'عرض سريع لأحدث سجلات بلاغات الاحتيال.',
     caseId: 'رقم البلاغ',
     claimId: 'رقم المطالبة',
     caseType: 'نوع البلاغ',
     priority: 'الأولوية',
     status: 'الحالة',
-    assignedUser: 'المستخدم المسؤول',
-
-    newLabel: 'جديد',
-    underReviewLabel: 'قيد المراجعة',
-    underInvestigationLabel: 'قيد التحقيق',
-    fraudConfirmedLabel: 'تم تأكيد الاحتيال',
-
-    highLabel: 'عالية',
-    mediumLabel: 'متوسطة',
-    lowLabel: 'منخفضة',
-
-    motor: 'مركبات',
-    medical: 'طبي',
-    property: 'ممتلكات',
-    travel: 'سفر',
-
-    fraudSuspected: 'اشتباه احتيال',
-    fraudConfirmedType: 'احتيال مؤكد',
-    documentMismatch: 'عدم تطابق المستندات',
-    identityConcern: 'اشتباه في الهوية',
-
-    whistleblowing: 'الإبلاغ الداخلي',
-    internal: 'داخلي',
-    providerAudit: 'تدقيق مقدم الخدمة',
-    customerCare: 'خدمة العملاء',
-
-    unassignedValue: 'غير معيّن',
-
-    activity1Name: 'فاطمة سالم',
-    activity1Text: 'أغلقت مراجعة عدم تطابق الفاتورة وصعّدت الحالة إلى الإحالة القانونية',
-    activity2Name: 'محمد حسن',
-    activity2Text: 'نقل إحدى حالات مخالفات المركبات إلى قيد المراجعة',
-    activity3Name: 'نورة خالد',
-    activity3Text: 'طلبت مرفقات داعمة لحالة ممتلكات معلّقة',
+    insuranceType: 'نوع التأمين',
+    caseEntryDate: 'تاريخ إدخال البلاغ',
+    amount: 'المبلغ المرتبط بالاحتيال',
+    noCases: 'لا توجد بلاغات.',
+    loadingDashboard: 'جاري تحميل بيانات لوحة التحكم من الخادم...',
+    errorLoadingDashboard: 'تعذر تحميل بيانات لوحة التحكم من الخادم.',
   },
 };
+
+function normalizeText(value: unknown) {
+  return String(value ?? '').trim();
+}
+
+function isOneOf(value: unknown, options: string[]) {
+  return options.includes(normalizeText(value));
+}
+
+function numberValue(value: unknown) {
+  const numeric = Number(value ?? 0);
+  return Number.isFinite(numeric) ? numeric : 0;
+}
+
+function formatDate(value: string | null) {
+  if (!value) return '-';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+  return date.toLocaleDateString('en-GB');
+}
+
+function countBy(items: BackendFraudCase[], key: keyof BackendFraudCase, allowedValues: string[]) {
+  return allowedValues.map((value) => ({
+    key: value,
+    value: items.filter((item) => normalizeText(item[key]) === value).length,
+  }));
+}
 
 export default function DashboardPage() {
   const { language } = useOutletContext<{ language: AppLanguage }>();
   const t = useMemo(() => pageCopy[language], [language]);
   const isArabic = language === 'ar';
-    const [summary, setSummary] = useState<DashboardSummary | null>(null);
-  const [isLoadingSummary, setIsLoadingSummary] = useState(true);
-  const [summaryError, setSummaryError] = useState('');
+
+  const [cases, setCases] = useState<BackendFraudCase[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [errorMessage, setErrorMessage] = useState('');
 
   useEffect(() => {
     let isMounted = true;
 
-    async function loadDashboardSummary() {
+    async function loadCases() {
       try {
-        setIsLoadingSummary(true);
-        setSummaryError('');
-
-        const data = await apiGet<DashboardSummary>('/api/dashboard/summary');
+        setIsLoading(true);
+        setErrorMessage('');
+        const data = await apiGet<BackendFraudCase[]>('/api/cases');
 
         if (isMounted) {
-          setSummary(data);
+          setCases(Array.isArray(data) ? data : []);
         }
       } catch (error) {
         if (isMounted) {
-          setSummaryError('Could not load dashboard summary from backend.');
+          setErrorMessage(t.errorLoadingDashboard);
         }
       } finally {
         if (isMounted) {
-          setIsLoadingSummary(false);
+          setIsLoading(false);
         }
       }
     }
 
-    loadDashboardSummary();
+    loadCases();
 
     return () => {
       isMounted = false;
     };
-  }, []);
+  }, [t.errorLoadingDashboard]);
 
-  const formatNumber = (value?: number) => {
-    return value === undefined || value === null ? '0' : value.toLocaleString();
+  const summary = useMemo(() => {
+    const totalCases = cases.length;
+    const draftCases = cases.filter((item) => normalizeText(item.case_status) === 'Draft').length;
+    const openCases = cases.filter((item) => normalizeText(item.case_status) === 'Open').length;
+    const closedCases = cases.filter((item) => normalizeText(item.case_status) === 'Closed').length;
+    const confirmedFraudCases = cases.filter((item) => isOneOf(item.case_type, ['Fraud Confirmed', 'احتيال مؤكد'])).length;
+    const suspendedClaims = cases.filter((item) => isOneOf(item.claim_status, ['Suspended', 'معلق'])).length;
+    const highPriorityCases = cases.filter((item) => isOneOf(item.priority_level, ['High', 'عالية'])).length;
+    const fraudAmount = cases.reduce((sum, item) => sum + numberValue(item.fraud_amount), 0);
+
+    return {
+      totalCases,
+      draftCases,
+      openCases,
+      closedCases,
+      confirmedFraudCases,
+      suspendedClaims,
+      highPriorityCases,
+      fraudAmount,
+    };
+  }, [cases]);
+
+  const formatNumber = (value: number) => value.toLocaleString();
+
+  const formatMoney = (value: number) => {
+    if (value >= 1000000) return `SAR ${(value / 1000000).toFixed(1)}M`;
+    if (value >= 1000) return `SAR ${(value / 1000).toFixed(0)}K`;
+    return `SAR ${value.toLocaleString()}`;
   };
 
-  const formatMoney = (value?: string) => {
-    const numericValue = Number(value || 0);
+  const cards = useMemo(
+    () => [
+      { title: t.totalCases, value: formatNumber(summary.totalCases), subtitle: t.totalCasesSubtitle },
+      { title: t.draftCases, value: formatNumber(summary.draftCases), subtitle: t.draftCasesSubtitle },
+      { title: t.openCases, value: formatNumber(summary.openCases), subtitle: t.openCasesSubtitle },
+      { title: t.closedCases, value: formatNumber(summary.closedCases), subtitle: t.closedCasesSubtitle },
+      { title: t.confirmedFraudCases, value: formatNumber(summary.confirmedFraudCases), subtitle: t.confirmedFraudCasesSubtitle },
+      { title: t.suspendedClaims, value: formatNumber(summary.suspendedClaims), subtitle: t.suspendedClaimsSubtitle },
+      { title: t.highPriorityCases, value: formatNumber(summary.highPriorityCases), subtitle: t.highPriorityCasesSubtitle },
+      { title: t.totalFraudAmount, value: formatMoney(summary.fraudAmount), subtitle: t.fraudExposure },
+    ],
+    [summary, t]
+  );
 
-    if (numericValue >= 1000) {
-      return `SAR ${(numericValue / 1000).toFixed(0)}K`;
+  const labelStatus = (value: string) => {
+    if (language === 'ar') {
+      if (value === 'Draft') return t.draft;
+      if (value === 'Open') return t.open;
+      if (value === 'Closed') return t.closed;
     }
-
-    return `SAR ${numericValue.toLocaleString()}`;
+    return value;
   };
 
-  const totalCasesValue = summary?.total_cases ?? 0;
-  const newCasesValue = summary?.new_cases ?? 0;
-  const casesUnderReviewValue = summary?.cases_under_review ?? 0;
-  const casesUnderInvestigationValue = summary?.cases_under_investigation ?? 0;
-  const confirmedFraudCasesValue = summary?.confirmed_fraud_cases ?? 0;
-  const closedCasesValue = summary?.closed_cases ?? 0;
-  const unassignedCasesValue = summary?.unassigned_cases ?? 0;
-  const highPriorityCasesValue = summary?.high_priority_cases ?? 0;
-  const suspectedAmountValue = summary?.suspected_amount ?? '0';
+  const labelPriority = (value: string) => {
+    if (language === 'ar') {
+      if (value === 'High') return t.high;
+      if (value === 'Medium') return t.medium;
+      if (value === 'Low') return t.low;
+    }
+    return value;
+  };
 
-    const cards = useMemo(
-    () => [
-      { title: t.totalCases, value: formatNumber(totalCasesValue), subtitle: t.totalCasesSubtitle },
-      { title: t.newCases, value: formatNumber(newCasesValue), subtitle: t.newCasesSubtitle },
-      { title: t.casesUnderReview, value: formatNumber(casesUnderReviewValue), subtitle: t.casesUnderReviewSubtitle },
-      {
-        title: t.casesUnderInvestigation,
-        value: formatNumber(casesUnderInvestigationValue),
-        subtitle: t.casesUnderInvestigationSubtitle,
-      },
-      {
-        title: t.confirmedFraudCases,
-        value: formatNumber(confirmedFraudCasesValue),
-        subtitle: t.confirmedFraudCasesSubtitle,
-      },
-      { title: t.closedCases, value: formatNumber(closedCasesValue), subtitle: t.closedCasesSubtitle },
-      { title: t.unassignedCases, value: formatNumber(unassignedCasesValue), subtitle: t.unassignedCasesSubtitle },
-      { title: t.highPriorityCases, value: formatNumber(highPriorityCasesValue), subtitle: t.highPriorityCasesSubtitle },
-    ],
-    [
-      t,
-      totalCasesValue,
-      newCasesValue,
-      casesUnderReviewValue,
-      casesUnderInvestigationValue,
-      confirmedFraudCasesValue,
-      closedCasesValue,
-      unassignedCasesValue,
-      highPriorityCasesValue,
-    ]
-  );
+  const labelInsurance = (value: string) => {
+    if (language === 'ar') {
+      if (value === 'Motor') return t.motor;
+      if (value === 'Medical') return t.medical;
+      if (value === 'Life') return t.life;
+      if (value === 'General') return t.general;
+    }
+    return value;
+  };
 
-  const insuranceTypeData = useMemo(
-    () => [
-      { label: t.motor, value: 15, max: 20 },
-      { label: t.medical, value: 12, max: 20 },
-      { label: t.property, value: 7, max: 20 },
-      { label: t.travel, value: 4, max: 20 },
-    ],
-    [t]
-  );
-
-  const caseTypeData = useMemo(
-    () => [
-      { label: t.fraudSuspected, value: 18, max: 20 },
-      { label: t.fraudConfirmedType, value: 9, max: 20 },
-      { label: t.documentMismatch, value: 6, max: 20 },
-      { label: t.identityConcern, value: 4, max: 20 },
-    ],
-    [t]
-  );
+  const labelCaseType = (value: string) => {
+    if (language === 'ar') {
+      if (value === 'Fraud Confirmed') return t.fraudConfirmed;
+      if (value === 'Fraud Suspected') return t.fraudSuspected;
+      if (value === 'Violation') return t.violation;
+    }
+    return value;
+  };
 
   const statusData = useMemo(
-    () => [
-      { label: t.newLabel, value: 19, max: 50 },
-      { label: t.underReviewLabel, value: 26, max: 50 },
-      { label: t.underInvestigationLabel, value: 37, max: 50 },
-      { label: t.fraudConfirmedLabel, value: 14, max: 50 },
-    ],
-    [t]
+    () =>
+      countBy(cases, 'case_status', ['Draft', 'Open', 'Closed']).map((item) => ({
+        label: labelStatus(item.key),
+        value: item.value,
+      })),
+    [cases, language]
   );
 
   const priorityData = useMemo(
-    () => [
-      { label: t.highLabel, value: 11, max: 20 },
-      { label: t.mediumLabel, value: 8, max: 20 },
-      { label: t.lowLabel, value: 5, max: 20 },
-    ],
-    [t]
+    () =>
+      countBy(cases, 'priority_level', ['High', 'Medium', 'Low']).map((item) => ({
+        label: labelPriority(item.key),
+        value: item.value,
+      })),
+    [cases, language]
   );
 
-  const processingTimeData = useMemo(
-    () => [
-      { label: t.thisWeek, value: t.thisWeekValue, progress: 48, max: 100 },
-      { label: t.thisMonth, value: t.thisMonthValue, progress: 52, max: 100 },
-      { label: t.highPriorityProcessing, value: t.highPriorityProcessingValue, progress: 31, max: 100 },
-    ],
-    [t]
+  const insuranceTypeData = useMemo(
+    () =>
+      countBy(cases, 'insurance_type', ['Motor', 'Medical', 'Life', 'General']).map((item) => ({
+        label: labelInsurance(item.key),
+        value: item.value,
+      })),
+    [cases, language]
   );
 
-  const activityList = useMemo(
-    () => [
-      { name: t.activity1Name, text: t.activity1Text },
-      { name: t.activity2Name, text: t.activity2Text },
-      { name: t.activity3Name, text: t.activity3Text },
-    ],
-    [t]
+  const caseTypeData = useMemo(
+    () =>
+      countBy(cases, 'case_type', ['Fraud Confirmed', 'Fraud Suspected', 'Violation']).map((item) => ({
+        label: labelCaseType(item.key),
+        value: item.value,
+      })),
+    [cases, language]
   );
 
-  const teamPerformanceData = useMemo(
-    () => [
-      {
-        name: language === 'ar' ? 'فاطمة سالم' : 'Fatimah Salem',
-        casesClosed: 12,
-        avgTime: language === 'ar' ? '4.2 أيام' : '4.2 days',
-      },
-      {
-        name: language === 'ar' ? 'محمد حسن' : 'Mohammed Hassan',
-        casesClosed: 9,
-        avgTime: language === 'ar' ? '5.1 أيام' : '5.1 days',
-      },
-      {
-        name: language === 'ar' ? 'نورة خالد' : 'Noura Khaled',
-        casesClosed: 7,
-        avgTime: language === 'ar' ? '6.0 أيام' : '6.0 days',
-      },
-    ],
-    [language]
+  const chartMax = useMemo(() => {
+    const allValues = [...statusData, ...priorityData, ...insuranceTypeData, ...caseTypeData].map((item) => item.value);
+    return Math.max(...allValues, 1);
+  }, [statusData, priorityData, insuranceTypeData, caseTypeData]);
+
+  const recentCases = useMemo(() => {
+    return [...cases]
+      .sort((a, b) => {
+        const first = new Date(b.created_at || b.case_entry_date || '').getTime();
+        const second = new Date(a.created_at || a.case_entry_date || '').getTime();
+        return (Number.isNaN(first) ? 0 : first) - (Number.isNaN(second) ? 0 : second);
+      })
+      .slice(0, 6);
+  }, [cases]);
+
+  const renderBars = (items: { label: string; value: number }[]) => (
+    <div className="bars">
+      {items.map((item) => (
+        <div key={item.label}>
+          <span className="bar-label">
+            <span>{item.label}</span>
+            <span>{item.value}</span>
+          </span>
+          <progress value={item.value} max={chartMax} />
+        </div>
+      ))}
+    </div>
   );
-
-  const maxClosedCases = useMemo(
-    () => Math.max(...teamPerformanceData.map((item) => item.casesClosed), 1),
-    [teamPerformanceData]
-  );
-
-  const translatePriority = (value: string) => {
-    if (language === 'ar') {
-      if (value === 'High') return t.highLabel;
-      if (value === 'Medium') return t.mediumLabel;
-      if (value === 'Low') return t.lowLabel;
-    }
-    return value;
-  };
-
-  const translateStatus = (value: string) => {
-    if (language === 'ar') {
-      if (value === 'New') return t.newLabel;
-      if (value === 'Under Review') return t.underReviewLabel;
-      if (value === 'Under Investigation') return t.underInvestigationLabel;
-      if (value === 'Fraud Confirmed') return t.fraudConfirmedLabel;
-    }
-    return value;
-  };
-
-  const translateCaseType = (value: string) => {
-    if (language === 'ar') {
-      if (value === 'Fraud Suspected') return t.fraudSuspected;
-      if (value === 'Fraud Confirmed') return t.fraudConfirmedType;
-      if (value === 'Document Mismatch') return t.documentMismatch;
-      if (value === 'Identity Concern') return t.identityConcern;
-    }
-    return value;
-  };
 
   return (
     <div dir={isArabic ? 'rtl' : 'ltr'}>
@@ -581,6 +477,18 @@ export default function DashboardPage() {
         subtitle={t.subtitle}
         action={<Link className="btn primary" to="/app/reports">{t.generateReport}</Link>}
       />
+
+      {isLoading ? (
+        <div className="card" style={{ marginBottom: 16 }}>
+          {t.loadingDashboard}
+        </div>
+      ) : null}
+
+      {errorMessage ? (
+        <div className="card" style={{ marginBottom: 16, color: '#b42318' }}>
+          {errorMessage}
+        </div>
+      ) : null}
 
       <section className="dashboard-overview">
         <div className="card dashboard-summary">
@@ -595,27 +503,24 @@ export default function DashboardPage() {
 
           <div className="summary-grid">
             <div className="summary-item">
-              <span className="muted small">{t.openCases}</span>
-              <strong>{formatNumber(totalCasesValue)}</strong>
-              <span className="muted small">{t.acrossAllStatuses}</span>
+              <span className="muted small">{t.totalOperationalCases}</span>
+              <strong>{formatNumber(summary.totalCases)}</strong>
+              <span className="muted small">{t.allCasesIncludingDrafts}</span>
             </div>
-
             <div className="summary-item">
-              <span className="muted small">{t.underInvestigation}</span>
-              <strong>{formatNumber(casesUnderInvestigationValue)}</strong>
-              <span className="muted small">{t.activeAnalystWorkload}</span>
+              <span className="muted small">{t.openOperationalCases}</span>
+              <strong>{formatNumber(summary.openCases)}</strong>
+              <span className="muted small">{t.activeCaseWorkload}</span>
             </div>
-
             <div className="summary-item">
-              <span className="muted small">{t.unassigned}</span>
-              <strong>{formatNumber(unassignedCasesValue)}</strong>
-              <span className="muted small">{t.needsImmediatePickup}</span>
+              <span className="muted small">{t.closedOperationalCases}</span>
+              <strong>{formatNumber(summary.closedCases)}</strong>
+              <span className="muted small">{t.completedCases}</span>
             </div>
-
             <div className="summary-item">
-              <span className="muted small">{t.suspectedAmount}</span>
-              <strong>{formatMoney(suspectedAmountValue)}</strong>
-              <span className="muted small">{t.highValueCasesInReview}</span>
+              <span className="muted small">{t.totalFraudAmount}</span>
+              <strong>{formatMoney(summary.fraudAmount)}</strong>
+              <span className="muted small">{t.fraudExposure}</span>
             </div>
           </div>
         </div>
@@ -634,20 +539,8 @@ export default function DashboardPage() {
               <h3>{t.casesByStatus}</h3>
               <p className="muted">{t.casesByStatusSubtitle}</p>
             </div>
-            <span className="badge medium">{t.balanced}</span>
           </div>
-
-          <div className="bars">
-            {statusData.map((item) => (
-              <div key={item.label}>
-                <span className="bar-label">
-                  <span>{item.label}</span>
-                  <span>{item.value}</span>
-                </span>
-                <progress value={item.value} max={item.max} />
-              </div>
-            ))}
-          </div>
+          {renderBars(statusData)}
         </div>
 
         <div className="card chart-card">
@@ -656,20 +549,8 @@ export default function DashboardPage() {
               <h3>{t.casesByPriority}</h3>
               <p className="muted">{t.casesByPrioritySubtitle}</p>
             </div>
-            <span className="badge high">{t.attention}</span>
           </div>
-
-          <div className="bars">
-            {priorityData.map((item) => (
-              <div key={item.label}>
-                <span className="bar-label">
-                  <span>{item.label}</span>
-                  <span>{item.value}</span>
-                </span>
-                <progress value={item.value} max={item.max} />
-              </div>
-            ))}
-          </div>
+          {renderBars(priorityData)}
         </div>
       </div>
 
@@ -681,18 +562,7 @@ export default function DashboardPage() {
               <p className="muted">{t.casesByInsuranceTypeSubtitle}</p>
             </div>
           </div>
-
-          <div className="bars">
-            {insuranceTypeData.map((item) => (
-              <div key={item.label}>
-                <span className="bar-label">
-                  <span>{item.label}</span>
-                  <span>{item.value}</span>
-                </span>
-                <progress value={item.value} max={item.max} />
-              </div>
-            ))}
-          </div>
+          {renderBars(insuranceTypeData)}
         </div>
 
         <div className="card chart-card">
@@ -702,150 +572,45 @@ export default function DashboardPage() {
               <p className="muted">{t.casesByCaseTypeSubtitle}</p>
             </div>
           </div>
-
-          <div className="bars">
-            {caseTypeData.map((item) => (
-              <div key={item.label}>
-                <span className="bar-label">
-                  <span>{item.label}</span>
-                  <span>{item.value}</span>
-                </span>
-                <progress value={item.value} max={item.max} />
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      <div className="two-col">
-        <div className="card">
-          <span className="eyebrow">{t.teamActivity}</span>
-          <h3>{t.recentAnalystMovement}</h3>
-
-          <div className="activity-list">
-            {activityList.map((activity) => (
-              <div className="activity-item" key={`${activity.name}-${activity.text}`}>
-                <strong>{activity.name}</strong>
-                <span>{activity.text}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        <div className="card chart-card">
-          <div className="chart-card-header">
-            <div>
-              <h3>{t.teamPerformance}</h3>
-              <p className="muted">{t.teamPerformanceSubtitle}</p>
-            </div>
-          </div>
-
-          <div className="bars">
-            {teamPerformanceData.map((member) => (
-              <div key={member.name}>
-                <span className="bar-label">
-                  <span>{member.name}</span>
-                  <span>{member.casesClosed}</span>
-                </span>
-                <div
-                  style={{
-                    position: 'relative',
-                    width: '100%',
-                    height: 18,
-                    background: 'rgba(15, 23, 42, 0.08)',
-                    borderRadius: 999,
-                    overflow: 'hidden',
-                  }}
-                >
-                  <div
-                    style={{
-                      width: `${(member.casesClosed / maxClosedCases) * 100}%`,
-                      height: '100%',
-                      background: 'linear-gradient(90deg, rgba(13,108,104,0.9), rgba(13,108,104,0.55))',
-                      borderRadius: 999,
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: isArabic ? 'flex-start' : 'flex-end',
-                      paddingInline: 10,
-                      color: 'white',
-                      fontSize: 12,
-                      fontWeight: 600,
-                      minWidth: 90,
-                      boxSizing: 'border-box',
-                    }}
-                  >
-                    {member.avgTime}
-                  </div>
-                </div>
-                <span className="muted small" style={{ display: 'block', marginTop: 6 }}>
-                  {t.casesClosedLabel}: {member.casesClosed} • {t.avgTimeLabel}: {member.avgTime}
-                </span>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      <div className="two-col">
-        <div className="card chart-card">
-          <div className="chart-card-header">
-            <div>
-              <h3>{t.averageCaseProcessingTime}</h3>
-              <p className="muted">{t.averageCaseProcessingTimeSubtitle}</p>
-            </div>
-            <span className="badge medium">{t.avgProcessingTimeValue}</span>
-          </div>
-
-          <div className="bars">
-            {processingTimeData.map((item) => (
-              <div key={item.label}>
-                <span className="bar-label">
-                  <span>{item.label}</span>
-                  <span>{item.value}</span>
-                </span>
-                <progress value={item.progress} max={item.max} />
-              </div>
-            ))}
-          </div>
+          {renderBars(caseTypeData)}
         </div>
       </div>
 
       <PageHeader eyebrow={t.eyebrow} title={t.recentCases} subtitle={t.recentCasesSubtitle} />
-      {isLoadingSummary ? (
-      <div className="card" style={{ marginBottom: 16 }}>
-        Loading dashboard data from backend...
-      </div>
-    ) : null}
-
-    {summaryError ? (
-      <div className="card" style={{ marginBottom: 16, color: '#b42318' }}>
-        {summaryError}
-      </div>
-    ) : null}
 
       <Table
         title={t.recentCasesTableTitle}
         subtitle={t.recentCasesTableSubtitle}
-        headers={[t.caseId, t.claimId, t.caseType, t.priority, t.status, t.assignedUser]}
+        headers={[t.caseId, t.claimId, t.caseEntryDate, t.caseType, t.priority, t.status, t.insuranceType, t.amount]}
       >
-        {fraudCases.slice(0, 4).map((item) => (
-          <tr key={item.id}>
-            <td>
-              <Link className="text-link" to={`/app/cases/${item.id}`}>
-                {item.id}
-              </Link>
+        {recentCases.length > 0 ? (
+          recentCases.map((item) => (
+            <tr key={item.id}>
+              <td>
+                <Link className="text-link" to={`/app/cases/${item.case_number}`}>
+                  {item.case_number}
+                </Link>
+              </td>
+              <td>{item.claim_id || '-'}</td>
+              <td>{formatDate(item.case_entry_date)}</td>
+              <td>{labelCaseType(normalizeText(item.case_type) || t.other)}</td>
+              <td>
+                <span className={`badge ${(normalizeText(item.priority_level) || 'medium').toLowerCase()}`}>
+                  {labelPriority(normalizeText(item.priority_level) || 'Medium')}
+                </span>
+              </td>
+              <td>{labelStatus(normalizeText(item.case_status) || '-')}</td>
+              <td>{labelInsurance(normalizeText(item.insurance_type) || t.other)}</td>
+              <td>{formatMoney(numberValue(item.fraud_amount))}</td>
+            </tr>
+          ))
+        ) : (
+          <tr>
+            <td colSpan={8} className="muted" style={{ textAlign: 'center', padding: '24px 16px' }}>
+              {isLoading ? t.loadingDashboard : t.noCases}
             </td>
-            <td>{item.claimId}</td>
-            <td>{translateCaseType(item.caseType)}</td>
-            <td>
-              <span className={`badge ${item.priorityLevel.toLowerCase()}`}>
-                {translatePriority(item.priorityLevel)}
-              </span>
-            </td>
-            <td>{translateStatus(item.caseStatus)}</td>
-            <td>{item.assignedUser ?? t.unassignedValue}</td>
           </tr>
-        ))}
+        )}
       </Table>
     </div>
   );
