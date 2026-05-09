@@ -42,10 +42,12 @@ type FiltersState = {
 type ReportPageCopy = {
   eyebrow: string;
   previewSubtitle: string;
+  confirmedFraudSubtitle: string;
   exportExcel: string;
   resetFilters: string;
   loading: string;
   error: string;
+  confirmedFraudError: string;
   noRows: string;
   filterCaseId: string;
   filterClaimId: string;
@@ -89,10 +91,12 @@ const pageCopy: Record<AppLanguage, ReportPageCopy> = {
   en: {
     eyebrow: 'Report',
     previewSubtitle: 'All submitted fraud cases excluding draft cases.',
+    confirmedFraudSubtitle: 'All confirmed fraud cases where the case type is Fraud Confirmed.',
     exportExcel: 'Export Excel',
     resetFilters: 'Reset Filters',
     loading: 'Loading report data...',
     error: 'Could not load fraud cases report from backend.',
+    confirmedFraudError: 'Could not load confirmed fraud report from backend.',
     noRows: 'No matching cases found.',
     filterCaseId: 'Filter Case Id',
     filterClaimId: 'Filter Claim Id',
@@ -140,10 +144,12 @@ const pageCopy: Record<AppLanguage, ReportPageCopy> = {
   ar: {
     eyebrow: 'تقرير',
     previewSubtitle: 'جميع بلاغات الاحتيال المعتمدة باستثناء البلاغات المسودة.',
+    confirmedFraudSubtitle: 'جميع البلاغات التي تم تصنيف نوع البلاغ فيها كاحتيال مؤكد.',
     exportExcel: 'تصدير Excel',
     resetFilters: 'إعادة ضبط الفلاتر',
     loading: 'جاري تحميل بيانات التقرير...',
     error: 'تعذر تحميل تقرير البلاغات من الخادم.',
+    confirmedFraudError: 'تعذر تحميل تقرير البلاغات المثبتة احتيال من الخادم.',
     noRows: 'لا توجد بلاغات مطابقة.',
     filterCaseId: 'تصفية رقم البلاغ',
     filterClaimId: 'تصفية رقم المطالبة',
@@ -263,6 +269,10 @@ export default function ReportDetailsPage() {
 
   const rawTitle = decodeURIComponent(reportName ?? 'Fraud Cases Report');
   const reportKey = routeToReportKey[rawTitle] ?? 'fraudCases';
+  const isConfirmedFraudReport = reportKey === 'confirmedFraud';
+  const reportEndpoint = isConfirmedFraudReport ? '/api/reports/confirmed-fraud' : '/api/reports/fraud-cases';
+  const reportSubtitle = isConfirmedFraudReport ? t.confirmedFraudSubtitle : t.previewSubtitle;
+  const reportError = isConfirmedFraudReport ? t.confirmedFraudError : t.error;
 
   const [filters, setFilters] = useState<FiltersState>(initialFilters);
   const [reportRows, setReportRows] = useState<FraudCaseReportRow[]>([]);
@@ -276,11 +286,11 @@ export default function ReportDetailsPage() {
       try {
         setIsLoading(true);
         setErrorMessage('');
-        const data = await apiGet<FraudCaseReportRow[]>('/api/reports/fraud-cases');
+        const data = await apiGet<FraudCaseReportRow[]>(reportEndpoint);
         if (isMounted) setReportRows(data);
       } catch (error) {
         console.error(error);
-        if (isMounted) setErrorMessage(t.error);
+        if (isMounted) setErrorMessage(reportError);
       } finally {
         if (isMounted) setIsLoading(false);
       }
@@ -291,7 +301,7 @@ export default function ReportDetailsPage() {
     return () => {
       isMounted = false;
     };
-  }, [t.error]);
+  }, [reportEndpoint, reportError]);
 
   const translateCaseSource = (value: string | null) => {
     if (language !== 'ar') return value || '-';
@@ -386,7 +396,7 @@ export default function ReportDetailsPage() {
       translateInsuranceType(item.insurance_type),
     ]);
 
-    downloadCsv('fraud-cases-report.csv', headers, excelRows);
+    downloadCsv(isConfirmedFraudReport ? 'confirmed-fraud-report.csv' : 'fraud-cases-report.csv', headers, excelRows);
   };
 
   const rows = useMemo(() => {
@@ -437,7 +447,7 @@ export default function ReportDetailsPage() {
       <PageHeader
         eyebrow={t.eyebrow}
         title={t.reportTitles[reportKey]}
-        subtitle={t.previewSubtitle}
+        subtitle={reportSubtitle}
         action={
           <div className="actions-inline">
             <button className="btn primary" onClick={exportFilteredExcel} type="button">
@@ -466,15 +476,17 @@ export default function ReportDetailsPage() {
           <option value="Website">{t.website}</option>
           <option value="Other">{t.other}</option>
         </select>
-        <select
-          value={filters.caseType}
-          onChange={(event) => setFilters((current) => ({ ...current, caseType: event.target.value }))}
-        >
-          <option value="">{t.allCaseTypes}</option>
-          <option value="Fraud Confirmed">{t.fraudConfirmedType}</option>
-          <option value="Fraud Suspected">{t.fraudSuspected}</option>
-          <option value="Violation">{t.violation}</option>
-        </select>
+        {!isConfirmedFraudReport && (
+          <select
+            value={filters.caseType}
+            onChange={(event) => setFilters((current) => ({ ...current, caseType: event.target.value }))}
+          >
+            <option value="">{t.allCaseTypes}</option>
+            <option value="Fraud Confirmed">{t.fraudConfirmedType}</option>
+            <option value="Fraud Suspected">{t.fraudSuspected}</option>
+            <option value="Violation">{t.violation}</option>
+          </select>
+        )}
         <select
           value={filters.priorityLevel}
           onChange={(event) => setFilters((current) => ({ ...current, priorityLevel: event.target.value }))}
