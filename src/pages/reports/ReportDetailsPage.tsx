@@ -97,7 +97,7 @@ const pageCopy: Record<AppLanguage, ReportPageCopy> = {
     previewSubtitle: 'All submitted fraud cases excluding draft cases.',
     confirmedFraudSubtitle: 'All confirmed fraud cases where the case type is Fraud Confirmed.',
     fraudIndicatorsSubtitle: 'All open and closed fraud-related cases for fraud indicator review. Draft cases are excluded.',
-    suspendedClaimsSubtitle: 'All cases where the claim status is suspended.',
+    suspendedClaimsSubtitle: 'All non-draft cases where the claim status is suspended.',
     exportExcel: 'Export Excel',
     resetFilters: 'Reset Filters',
     loading: 'Loading report data...',
@@ -154,7 +154,7 @@ const pageCopy: Record<AppLanguage, ReportPageCopy> = {
     previewSubtitle: 'جميع بلاغات الاحتيال المعتمدة باستثناء البلاغات المسودة.',
     confirmedFraudSubtitle: 'جميع البلاغات التي تم تصنيف نوع البلاغ فيها كاحتيال مؤكد.',
     fraudIndicatorsSubtitle: 'جميع البلاغات المفتوحة والمغلقة المرتبطة بالاحتيال لمراجعة مؤشرات الاحتيال، مع استبعاد المسودات.',
-    suspendedClaimsSubtitle: 'جميع البلاغات التي تكون حالة المطالبة فيها معلقة.',
+    suspendedClaimsSubtitle: 'جميع البلاغات غير المسودة التي تكون حالة المطالبة فيها معلقة.',
     exportExcel: 'تصدير Excel',
     resetFilters: 'إعادة ضبط الفلاتر',
     loading: 'جاري تحميل بيانات التقرير...',
@@ -379,6 +379,7 @@ export default function ReportDetailsPage() {
 
   const filteredRows = useMemo(() => {
     return reportRows.filter((item) => {
+      if (normalize(item.case_status) === 'draft') return false;
       const entryDate = toDateKey(item.case_entry_date);
       const matchesStart = !filters.startDate || (entryDate && entryDate >= filters.startDate);
       const matchesEnd = !filters.endDate || (entryDate && entryDate <= filters.endDate);

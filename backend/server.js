@@ -1073,7 +1073,8 @@ app.get("/api/reports/confirmed-fraud", async (req, res) => {
         suspected_amount,
         insurance_type
       FROM fraud_cases
-      WHERE case_type IN ('Fraud Confirmed', 'احتيال مؤكد')
+      WHERE COALESCE(case_status, '') <> 'Draft'
+        AND case_type IN ('Fraud Confirmed', 'احتيال مؤكد')
       ORDER BY case_entry_date DESC NULLS LAST, created_at DESC
     `);
 
@@ -1104,7 +1105,8 @@ app.get("/api/reports/fraud-indicators", async (req, res) => {
         suspected_amount,
         insurance_type
       FROM fraud_cases
-      WHERE case_status IN ('Open', 'Closed')
+      WHERE COALESCE(case_status, '') <> 'Draft'
+        AND case_status IN ('Open', 'Closed')
         AND case_type IN ('Fraud Confirmed', 'Fraud Suspected', 'احتيال مؤكد', 'اشتباه الاحتيال')
       ORDER BY case_entry_date DESC NULLS LAST, created_at DESC
     `);
@@ -1136,7 +1138,8 @@ app.get("/api/reports/suspended-claims", async (req, res) => {
         suspected_amount,
         insurance_type
       FROM fraud_cases
-      WHERE claim_status IN ('Suspended', 'معلق')
+      WHERE COALESCE(case_status, '') <> 'Draft'
+        AND claim_status IN ('Suspended', 'معلق')
       ORDER BY case_entry_date DESC NULLS LAST, created_at DESC
     `);
 
