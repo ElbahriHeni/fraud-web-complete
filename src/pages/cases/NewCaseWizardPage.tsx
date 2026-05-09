@@ -5,6 +5,35 @@ import Table from '../../components/Table';
 import { apiPost } from '../../api';
 import type { AppLanguage } from '../../layout/AppLayout';
 
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+
+async function uploadCaseDocument(caseNumber: string, file: File) {
+  const formData = new FormData();
+  formData.append('document', file);
+  formData.append('category', 'supporting_document');
+  formData.append('uploaded_by', 'Admin');
+
+  const response = await fetch(`${API_URL}/api/cases/${caseNumber}/upload-document`, {
+    method: 'POST',
+    body: formData,
+  });
+
+  if (!response.ok) {
+    let errorMessage = `Document upload failed: ${response.status}`;
+
+    try {
+      const errorBody = await response.json();
+      errorMessage = errorBody?.message || errorBody?.error || errorMessage;
+    } catch {
+      // Keep the default error message.
+    }
+
+    throw new Error(errorMessage);
+  }
+
+  return response.json();
+}
+
 type WizardStep =
   | 'reporter'
   | 'overview'
@@ -321,15 +350,12 @@ export default function NewCaseWizardPage() {
         closure_reason: '',
         fraud_unit_notes: form.fraudUnitNotes,
 
-        documents: files.map((file) => ({
-          file_name: file.name,
-          file_type: file.type || 'file',
-          file_url: '',
-          category: 'supporting_document',
-          uploaded_by: 'Admin',
-        })),
         created_by: 'Admin',
       });
+
+      for (const file of files) {
+        await uploadCaseDocument(createdCase.case_number, file);
+      }
 
       navigate(`/app/cases/${createdCase.case_number}`);
     } catch (error) {
@@ -516,8 +542,8 @@ export default function NewCaseWizardPage() {
       ))}
       <p className="muted">
         {isArabic
-          ? 'حاليًا يتم حفظ بيانات المرفق فقط، وليس رفع الملف الفعلي.'
-          : 'Currently the system saves attachment metadata only, not the physical file.'}
+          ? 'سيتم رفع الملفات فعليًا إلى التخزين الآمن عند الحفظ كمسودة أو إرسال البلاغ.'
+          : 'Files will be uploaded to secure storage when you save as draft or submit the case.'}
       </p>
     </div>
   );

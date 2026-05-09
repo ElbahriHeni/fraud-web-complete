@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useOutletContext, useParams } from 'react-router-dom';
 import PageHeader from '../../components/PageHeader';
 import Table from '../../components/Table';
-import { apiGet, apiPatch, apiPost } from '../../api';
+import { apiGet, apiPatch } from '../../api';
 import type { AppLanguage } from '../../layout/AppLayout';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
@@ -67,6 +67,7 @@ type BackendDocument = {
   file_name: string;
   file_type: string | null;
   file_url: string | null;
+  storage_path?: string | null;
   category: string | null;
   uploaded_by: string | null;
   uploaded_at: string | null;
@@ -428,6 +429,33 @@ export default function CaseDetailsPage() {
     setForm(mapCaseToForm(data, isArabic));
   };
 
+  const uploadCaseDocument = async (file: File) => {
+    if (!caseId) return;
+
+    const formData = new FormData();
+    formData.append('document', file);
+    formData.append('category', 'supporting_document');
+    formData.append('uploaded_by', 'Admin');
+
+    const response = await fetch(`${API_URL}/api/cases/${caseId}/upload-document`, {
+      method: 'POST',
+      body: formData,
+    });
+
+    if (!response.ok) {
+      let message = 'Failed to upload document.';
+      try {
+        const errorBody = await response.json();
+        message = errorBody?.error || errorBody?.message || message;
+      } catch {
+        // Keep default message when the response is not JSON.
+      }
+      throw new Error(message);
+    }
+
+    return response.json();
+  };
+
   const handleSave = async () => {
     if (!caseId) return;
     try {
@@ -494,14 +522,14 @@ export default function CaseDetailsPage() {
 
       if (currentStep === 'attachments') {
         for (const file of files) {
-          await apiPost(`/api/cases/${caseId}/documents`, {
-            file_name: file.name,
-            file_type: file.type || 'file',
-            file_url: '',
-            category: 'supporting_document',
-            uploaded_by: 'Admin',
-          });
+          await uploadCaseDocument(file);
         }
+
+        if (files.length > 0) {
+          const latestDocuments = await apiGet<BackendDocument[]>(`/api/cases/${caseId}/documents`);
+          setDocuments(latestDocuments);
+        }
+
         setFiles([]);
       }
 
@@ -598,7 +626,15 @@ export default function CaseDetailsPage() {
     <div className="card form-grid single">
       <label style={fieldStyle}><span>{isArabic ? 'إضافة مرفقات' : 'Add Attachments'}</span><input type="file" multiple onChange={(event) => setFiles(event.target.files ? Array.from(event.target.files) : [])} /></label>
       {documents.length === 0 ? <p className="muted">{isArabic ? 'لا توجد مرفقات محفوظة.' : 'No saved attachments.'}</p> : null}
-      {documents.map((doc) => <div key={doc.id} className="card"><strong>{doc.file_name}</strong><p className="muted">{doc.file_type || '-'} • {formatDateTime(doc.uploaded_at)}</p></div>)}
+      {documents.map((doc) => (
+        <div key={doc.id} className="card">
+          <strong>{doc.file_name}</strong>
+          <p className="muted">{doc.file_type || '-'} • {formatDateTime(doc.uploaded_at)}</p>
+          <a className="text-link" href={`${API_URL}/api/documents/${doc.id}/download`} target="_blank" rel="noreferrer">
+            {isArabic ? 'تحميل المرفق' : 'Download attachment'}
+          </a>
+        </div>
+      ))}
       {files.map((file) => <p key={file.name}>{file.name}</p>)}
     </div>
   );

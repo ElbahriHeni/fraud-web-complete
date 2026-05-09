@@ -1,8 +1,8 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useOutletContext, useParams } from 'react-router-dom';
 import PageHeader from '../../components/PageHeader';
 import Table from '../../components/Table';
-import { fraudCases } from '../../data/mockData';
+import { apiGet } from '../../api';
 import type { AppLanguage } from '../../layout/AppLayout';
 
 type ReportKey =
@@ -12,16 +12,29 @@ type ReportKey =
   | 'suspendedClaims'
   | 'fraudPerformance';
 
+type FraudCaseReportRow = {
+  case_id: string | null;
+  claim_id: string | null;
+  case_entry_date: string | null;
+  case_source: string | null;
+  case_type: string | null;
+  priority_level: string | null;
+  case_status: string | null;
+  fraud_unit_notes: string | null;
+  closure_date: string | null;
+  closure_reason: string | null;
+  suspected_amount: string | number | null;
+  insurance_type: string | null;
+};
+
 type FiltersState = {
   caseId: string;
   claimId: string;
+  caseSource: string;
   caseType: string;
-  status: string;
-  priority: string;
+  priorityLevel: string;
+  caseStatus: string;
   insuranceType: string;
-};
-
-type DateRangeState = {
   startDate: string;
   endDate: string;
 };
@@ -29,16 +42,20 @@ type DateRangeState = {
 type ReportPageCopy = {
   eyebrow: string;
   previewSubtitle: string;
-  exportPdf: string;
   exportExcel: string;
-
+  resetFilters: string;
+  loading: string;
+  error: string;
+  noRows: string;
   filterCaseId: string;
   filterClaimId: string;
+  allCaseSources: string;
   allCaseTypes: string;
-  allStatuses: string;
   allPriorities: string;
+  allStatuses: string;
   allInsuranceTypes: string;
-
+  startDate: string;
+  endDate: string;
   caseId: string;
   claimId: string;
   caseEntryDate: string;
@@ -51,81 +68,41 @@ type ReportPageCopy = {
   closureReason: string;
   suspectedAmount: string;
   insuranceType: string;
-
-  claimType: string;
-  fraudConfirmedDate: string;
-  fraudDetectionMethod: string;
-  fraudAmount: string;
-  actionTaken: string;
-  referredEntity: string;
-
-  fraudIndicatorType: string;
-  indicatorDescription: string;
-  occurrenceCount: string;
-  riskScore: string;
-  systemRecommendation: string;
-  fraudOfficerDecision: string;
-
-  suspensionDate: string;
-  suspensionReason: string;
-  suspensionDurationDays: string;
-  currentStatus: string;
-  assignedUser: string;
-
-  totalReceivedCases: string;
-  totalClosedCases: string;
-  totalOpenCases: string;
-  averageProcessingTime: string;
-  mostFrequentFraudType: string;
-  totalFraudAmount: string;
-
-  newLabel: string;
-  underReview: string;
-  underInvestigation: string;
-  pendingInformation: string;
-  fraudConfirmed: string;
-  closed: string;
-  rejected: string;
-
+  website: string;
+  other: string;
+  fraudConfirmedType: string;
+  fraudSuspected: string;
+  violation: string;
   high: string;
   medium: string;
   low: string;
-
+  open: string;
+  closed: string;
   motor: string;
   medical: string;
-  property: string;
-  travel: string;
-
-  fraudSuspected: string;
-  fraudConfirmedType: string;
-  violation: string;
-  documentMismatch: string;
-  identityConcern: string;
-
-  whistleblowing: string;
-  internal: string;
-  website: string;
-  callCenter: string;
-  providerAudit: string;
-  customerCare: string;
-
+  life: string;
+  general: string;
   reportTitles: Record<ReportKey, string>;
 };
 
 const pageCopy: Record<AppLanguage, ReportPageCopy> = {
   en: {
     eyebrow: 'Report',
-    previewSubtitle: 'Preview page for report output and export actions.',
-    exportPdf: 'Export PDF',
+    previewSubtitle: 'All submitted fraud cases excluding draft cases.',
     exportExcel: 'Export Excel',
-
+    resetFilters: 'Reset Filters',
+    loading: 'Loading report data...',
+    error: 'Could not load fraud cases report from backend.',
+    noRows: 'No matching cases found.',
     filterCaseId: 'Filter Case Id',
     filterClaimId: 'Filter Claim Id',
+    allCaseSources: 'All Case Sources',
     allCaseTypes: 'All Case Types',
-    allStatuses: 'All Statuses',
     allPriorities: 'All Priorities',
+    allStatuses: 'All Statuses',
     allInsuranceTypes: 'All Insurance Types',
-
+    startDate: 'Start Date',
+    endDate: 'End Date',
     caseId: 'Case Id',
     claimId: 'Claim Id',
     caseEntryDate: 'Case Entry Date',
@@ -138,64 +115,20 @@ const pageCopy: Record<AppLanguage, ReportPageCopy> = {
     closureReason: 'Closure Reason',
     suspectedAmount: 'Suspected Amount',
     insuranceType: 'Insurance Type',
-
-    claimType: 'Claim Type',
-    fraudConfirmedDate: 'Fraud Confirmed Date',
-    fraudDetectionMethod: 'Fraud Detection Method',
-    fraudAmount: 'Fraud Amount',
-    actionTaken: 'Action Taken',
-    referredEntity: 'Referred Entity',
-
-    fraudIndicatorType: 'Fraud Indicator Type',
-    indicatorDescription: 'Indicator Description',
-    occurrenceCount: 'Occurrence Count',
-    riskScore: 'Risk Score',
-    systemRecommendation: 'System Recommendation',
-    fraudOfficerDecision: 'Fraud Officer Decision',
-
-    suspensionDate: 'Suspension Date',
-    suspensionReason: 'Suspension Reason',
-    suspensionDurationDays: 'Suspension Duration Days',
-    currentStatus: 'Current Status',
-    assignedUser: 'Assigned User',
-
-    totalReceivedCases: 'Total Received Cases',
-    totalClosedCases: 'Total Closed Cases',
-    totalOpenCases: 'Total Open Cases',
-    averageProcessingTime: 'Average Processing Time',
-    mostFrequentFraudType: 'Most Frequent Fraud Type',
-    totalFraudAmount: 'Total Fraud Amount',
-
-    newLabel: 'New',
-    underReview: 'Under Review',
-    underInvestigation: 'Under Investigation',
-    pendingInformation: 'Pending Information',
-    fraudConfirmed: 'Fraud Confirmed',
-    closed: 'Closed',
-    rejected: 'Rejected',
-
+    website: 'Website',
+    other: 'Other',
+    fraudConfirmedType: 'Fraud Confirmed',
+    fraudSuspected: 'Fraud Suspected',
+    violation: 'Violation',
     high: 'High',
     medium: 'Medium',
     low: 'Low',
-
+    open: 'Open',
+    closed: 'Closed',
     motor: 'Motor',
     medical: 'Medical',
-    property: 'Property',
-    travel: 'Travel',
-
-    fraudSuspected: 'Fraud Suspected',
-    fraudConfirmedType: 'Fraud Confirmed',
-    violation: 'Violation',
-    documentMismatch: 'Document Mismatch',
-    identityConcern: 'Identity Concern',
-
-    whistleblowing: 'Whistleblowing',
-    internal: 'Internal',
-    website: 'Website',
-    callCenter: 'Call Center',
-    providerAudit: 'Provider Audit',
-    customerCare: 'Customer Care',
-
+    life: 'Life',
+    general: 'General',
     reportTitles: {
       fraudCases: 'Fraud Cases Report',
       confirmedFraud: 'Confirmed Fraud Report',
@@ -206,17 +139,21 @@ const pageCopy: Record<AppLanguage, ReportPageCopy> = {
   },
   ar: {
     eyebrow: 'تقرير',
-    previewSubtitle: 'صفحة معاينة لمخرجات التقرير وخيارات التصدير.',
-    exportPdf: 'تصدير PDF',
+    previewSubtitle: 'جميع بلاغات الاحتيال المعتمدة باستثناء البلاغات المسودة.',
     exportExcel: 'تصدير Excel',
-
+    resetFilters: 'إعادة ضبط الفلاتر',
+    loading: 'جاري تحميل بيانات التقرير...',
+    error: 'تعذر تحميل تقرير البلاغات من الخادم.',
+    noRows: 'لا توجد بلاغات مطابقة.',
     filterCaseId: 'تصفية رقم البلاغ',
     filterClaimId: 'تصفية رقم المطالبة',
+    allCaseSources: 'جميع طرق استقبال البلاغ',
     allCaseTypes: 'جميع أنواع البلاغات',
-    allStatuses: 'جميع الحالات',
     allPriorities: 'جميع الأولويات',
+    allStatuses: 'جميع الحالات',
     allInsuranceTypes: 'جميع أنواع التأمين',
-
+    startDate: 'تاريخ البداية',
+    endDate: 'تاريخ النهاية',
     caseId: 'رقم البلاغ',
     claimId: 'رقم المطالبة',
     caseEntryDate: 'تاريخ إدخال البلاغ',
@@ -229,64 +166,20 @@ const pageCopy: Record<AppLanguage, ReportPageCopy> = {
     closureReason: 'سبب الإغلاق',
     suspectedAmount: 'المبلغ محل الاشتباه',
     insuranceType: 'نوع التأمين',
-
-    claimType: 'نوع المطالبة',
-    fraudConfirmedDate: 'تاريخ ثبوت الاحتيال',
-    fraudDetectionMethod: 'آلية اكتشاف الاحتيال',
-    fraudAmount: 'المبلغ المرتبط بالاحتيال',
-    actionTaken: 'الإجراء المتخذ',
-    referredEntity: 'الجهة المحالة لها',
-
-    fraudIndicatorType: 'نوع مؤشر الاحتيال',
-    indicatorDescription: 'وصف المؤشر',
-    occurrenceCount: 'عدد مرات التكرار',
-    riskScore: 'درجة الخطورة',
-    systemRecommendation: 'التوصية الآلية',
-    fraudOfficerDecision: 'قرار موظف وحدة مكافحة الاحتيال',
-
-    suspensionDate: 'تاريخ التعليق',
-    suspensionReason: 'سبب التعليق',
-    suspensionDurationDays: 'مدة التعليق (بالأيام)',
-    currentStatus: 'الحالة الحالية',
-    assignedUser: 'الموظف المسؤول',
-
-    totalReceivedCases: 'عدد البلاغات المستلمة',
-    totalClosedCases: 'عدد البلاغات المغلقة',
-    totalOpenCases: 'عدد البلاغات المفتوحة',
-    averageProcessingTime: 'متوسط زمن معالجة البلاغ',
-    mostFrequentFraudType: 'أكثر أنواع الاحتيال تكرارًا',
-    totalFraudAmount: 'إجمالي المبالغ المرتبطة بالاحتيال',
-
-    newLabel: 'جديد',
-    underReview: 'قيد المراجعة',
-    underInvestigation: 'قيد التحقيق',
-    pendingInformation: 'بانتظار معلومات',
-    fraudConfirmed: 'تم تأكيد الاحتيال',
-    closed: 'مغلق',
-    rejected: 'مرفوض',
-
+    website: 'الموقع',
+    other: 'أخرى',
+    fraudConfirmedType: 'احتيال مؤكد',
+    fraudSuspected: 'اشتباه الاحتيال',
+    violation: 'مخالفة',
     high: 'عالية',
     medium: 'متوسطة',
     low: 'منخفضة',
-
+    open: 'مفتوح',
+    closed: 'مغلق',
     motor: 'مركبات',
     medical: 'طبي',
-    property: 'ممتلكات',
-    travel: 'سفر',
-
-    fraudSuspected: 'اشتباه احتيال',
-    fraudConfirmedType: 'تم تأكيد الاحتيال',
-    violation: 'مخالفة',
-    documentMismatch: 'عدم تطابق المستندات',
-    identityConcern: 'اشتباه في الهوية',
-
-    whistleblowing: 'الإبلاغ الداخلي',
-    internal: 'داخلي',
-    website: 'الموقع الإلكتروني',
-    callCenter: 'مركز الاتصال',
-    providerAudit: 'تدقيق مقدم الخدمة',
-    customerCare: 'خدمة العملاء',
-
+    life: 'حياة',
+    general: 'عام',
     reportTitles: {
       fraudCases: 'تقرير البلاغات',
       confirmedFraud: 'تقرير البلاغات المثبتة احتيال',
@@ -305,6 +198,63 @@ const routeToReportKey: Record<string, ReportKey> = {
   'Fraud Performance Report': 'fraudPerformance',
 };
 
+const initialFilters: FiltersState = {
+  caseId: '',
+  claimId: '',
+  caseSource: '',
+  caseType: '',
+  priorityLevel: '',
+  caseStatus: '',
+  insuranceType: '',
+  startDate: '',
+  endDate: '',
+};
+
+function normalize(value: unknown) {
+  return String(value ?? '').trim().toLowerCase();
+}
+
+function formatDate(value: string | null) {
+  if (!value) return '-';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+  return date.toLocaleDateString('en-GB');
+}
+
+function formatMoney(value: string | number | null) {
+  const numeric = Number(value ?? 0);
+  if (Number.isNaN(numeric)) return String(value ?? '-');
+  return `SAR ${numeric.toLocaleString(undefined, { maximumFractionDigits: 2 })}`;
+}
+
+function toDateKey(value: string | null) {
+  if (!value) return '';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return '';
+  return date.toISOString().slice(0, 10);
+}
+
+function csvEscape(value: unknown) {
+  const text = String(value ?? '').replace(/"/g, '""');
+  return `"${text}"`;
+}
+
+function downloadCsv(fileName: string, headers: string[], rows: Array<Array<string | number | null>>) {
+  const csv = [headers, ...rows]
+    .map((row) => row.map(csvEscape).join(','))
+    .join('\n');
+
+  const blob = new Blob([`\ufeff${csv}`], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = fileName;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(url);
+}
+
 export default function ReportDetailsPage() {
   const { reportName } = useParams();
   const { language } = useOutletContext<{ language: AppLanguage }>();
@@ -314,257 +264,173 @@ export default function ReportDetailsPage() {
   const rawTitle = decodeURIComponent(reportName ?? 'Fraud Cases Report');
   const reportKey = routeToReportKey[rawTitle] ?? 'fraudCases';
 
-  const [filters, setFilters] = useState<FiltersState>({
-    caseId: '',
-    claimId: '',
-    caseType: '',
-    status: '',
-    priority: '',
-    insuranceType: '',
-  });
+  const [filters, setFilters] = useState<FiltersState>(initialFilters);
+  const [reportRows, setReportRows] = useState<FraudCaseReportRow[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [errorMessage, setErrorMessage] = useState('');
 
-  const [dateRange, setDateRange] = useState<DateRangeState>({
-    startDate: '2026-04-01',
-    endDate: '2026-04-07',
-  });
+  useEffect(() => {
+    let isMounted = true;
 
-  const translateStatus = (value: string) => {
-    if (language === 'ar') {
-      if (value === 'New') return t.newLabel;
-      if (value === 'Under Review') return t.underReview;
-      if (value === 'Under Investigation') return t.underInvestigation;
-      if (value === 'Pending Information') return t.pendingInformation;
-      if (value === 'Fraud Confirmed') return t.fraudConfirmed;
-      if (value === 'Closed') return t.closed;
-      if (value === 'Rejected') return t.rejected;
+    async function loadReport() {
+      try {
+        setIsLoading(true);
+        setErrorMessage('');
+        const data = await apiGet<FraudCaseReportRow[]>('/api/reports/fraud-cases');
+        if (isMounted) setReportRows(data);
+      } catch (error) {
+        console.error(error);
+        if (isMounted) setErrorMessage(t.error);
+      } finally {
+        if (isMounted) setIsLoading(false);
+      }
     }
-    return value;
+
+    loadReport();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [t.error]);
+
+  const translateCaseSource = (value: string | null) => {
+    if (language !== 'ar') return value || '-';
+    if (value === 'Website') return t.website;
+    if (value === 'Other') return t.other;
+    return value || '-';
   };
 
-  const translatePriority = (value: string) => {
-    if (language === 'ar') {
-      if (value === 'High') return t.high;
-      if (value === 'Medium') return t.medium;
-      if (value === 'Low') return t.low;
-    }
-    return value;
+  const translateCaseType = (value: string | null) => {
+    if (language !== 'ar') return value || '-';
+    if (value === 'Fraud Confirmed') return t.fraudConfirmedType;
+    if (value === 'Fraud Suspected') return t.fraudSuspected;
+    if (value === 'Violation') return t.violation;
+    return value || '-';
   };
 
-  const translateInsuranceType = (value: string) => {
-    if (language === 'ar') {
-      if (value === 'Motor') return t.motor;
-      if (value === 'Medical') return t.medical;
-      if (value === 'Property') return t.property;
-      if (value === 'Travel') return t.travel;
-    }
-    return value;
+  const translatePriority = (value: string | null) => {
+    if (language !== 'ar') return value || '-';
+    if (value === 'High') return t.high;
+    if (value === 'Medium') return t.medium;
+    if (value === 'Low') return t.low;
+    return value || '-';
   };
 
-  const translateCaseType = (value: string) => {
-    if (language === 'ar') {
-      if (value === 'Fraud Suspected') return t.fraudSuspected;
-      if (value === 'Fraud Confirmed') return t.fraudConfirmedType;
-      if (value === 'Violation') return t.violation;
-      if (value === 'Document Mismatch') return t.documentMismatch;
-      if (value === 'Identity Concern') return t.identityConcern;
-    }
-    return value;
+  const translateStatus = (value: string | null) => {
+    if (language !== 'ar') return value || '-';
+    if (value === 'Open') return t.open;
+    if (value === 'Closed') return t.closed;
+    return value || '-';
   };
 
-  const translateCaseSource = (value: string) => {
-    if (language === 'ar') {
-      if (value === 'Whistleblowing') return t.whistleblowing;
-      if (value === 'Internal') return t.internal;
-      if (value === 'Website') return t.website;
-      if (value === 'Call Center') return t.callCenter;
-      if (value === 'Provider Audit') return t.providerAudit;
-      if (value === 'Customer Care') return t.customerCare;
-    }
-    return value;
+  const translateInsuranceType = (value: string | null) => {
+    if (language !== 'ar') return value || '-';
+    if (value === 'Motor') return t.motor;
+    if (value === 'Medical') return t.medical;
+    if (value === 'Life') return t.life;
+    if (value === 'General') return t.general;
+    return value || '-';
   };
 
-  const filteredCases = useMemo(() => {
-    return fraudCases.filter((item) => {
-      const entryDate = item.caseEntryDate ?? '2026-04-01';
-      const withinDateRange =
-        (!dateRange.startDate || entryDate >= dateRange.startDate) &&
-        (!dateRange.endDate || entryDate <= dateRange.endDate);
+  const filteredRows = useMemo(() => {
+    return reportRows.filter((item) => {
+      const entryDate = toDateKey(item.case_entry_date);
+      const matchesStart = !filters.startDate || (entryDate && entryDate >= filters.startDate);
+      const matchesEnd = !filters.endDate || (entryDate && entryDate <= filters.endDate);
 
       return (
-        withinDateRange &&
-        item.id.toLowerCase().includes(filters.caseId.toLowerCase()) &&
-        item.claimId.toLowerCase().includes(filters.claimId.toLowerCase()) &&
-        item.caseType.toLowerCase().includes(filters.caseType.toLowerCase()) &&
-        item.caseStatus.toLowerCase().includes(filters.status.toLowerCase()) &&
-        item.priorityLevel.toLowerCase().includes(filters.priority.toLowerCase()) &&
-        item.insuranceType.toLowerCase().includes(filters.insuranceType.toLowerCase())
+        matchesStart &&
+        matchesEnd &&
+        normalize(item.case_id).includes(normalize(filters.caseId)) &&
+        normalize(item.claim_id).includes(normalize(filters.claimId)) &&
+        (!filters.caseSource || item.case_source === filters.caseSource) &&
+        (!filters.caseType || item.case_type === filters.caseType) &&
+        (!filters.priorityLevel || item.priority_level === filters.priorityLevel) &&
+        (!filters.caseStatus || item.case_status === filters.caseStatus) &&
+        (!filters.insuranceType || item.insurance_type === filters.insuranceType)
       );
     });
-  }, [dateRange.endDate, dateRange.startDate, filters]);
+  }, [filters, reportRows]);
 
-  const headers = useMemo(() => {
-    switch (reportKey) {
-      case 'fraudCases':
-        return [
-          t.caseId,
-          t.claimId,
-          t.caseEntryDate,
-          t.caseSource,
-          t.caseType,
-          t.priorityLevel,
-          t.caseStatus,
-          t.fraudUnitNotes,
-          t.closureDate,
-          t.closureReason,
-          t.suspectedAmount,
-          t.insuranceType,
-        ];
-      case 'confirmedFraud':
-        return [
-          t.claimId,
-          t.claimType,
-          t.insuranceType,
-          t.fraudConfirmedDate,
-          t.fraudDetectionMethod,
-          t.fraudAmount,
-          t.actionTaken,
-          t.referredEntity,
-        ];
-      case 'fraudIndicators':
-        return [
-          t.claimId,
-          t.fraudIndicatorType,
-          t.indicatorDescription,
-          t.occurrenceCount,
-          t.riskScore,
-          t.systemRecommendation,
-          t.fraudOfficerDecision,
-        ];
-      case 'suspendedClaims':
-        return [
-          t.claimId,
-          t.suspensionDate,
-          t.suspensionReason,
-          t.priorityLevel,
-          t.suspensionDurationDays,
-          t.currentStatus,
-          t.assignedUser,
-        ];
-      case 'fraudPerformance':
-        return [
-          t.totalReceivedCases,
-          t.totalClosedCases,
-          t.totalOpenCases,
-          t.averageProcessingTime,
-          t.mostFrequentFraudType,
-          t.totalFraudAmount,
-        ];
-      default:
-        return [t.caseId, t.claimId];
-    }
-  }, [reportKey, t]);
+  const headers = useMemo(
+    () => [
+      t.caseId,
+      t.claimId,
+      t.caseEntryDate,
+      t.caseSource,
+      t.caseType,
+      t.priorityLevel,
+      t.caseStatus,
+      t.fraudUnitNotes,
+      t.closureDate,
+      t.closureReason,
+      t.suspectedAmount,
+      t.insuranceType,
+    ],
+    [t]
+  );
+
+  const exportFilteredExcel = () => {
+    const excelRows = filteredRows.map((item) => [
+      item.case_id ?? '',
+      item.claim_id ?? '',
+      formatDate(item.case_entry_date),
+      translateCaseSource(item.case_source),
+      translateCaseType(item.case_type),
+      translatePriority(item.priority_level),
+      translateStatus(item.case_status),
+      item.fraud_unit_notes ?? '',
+      formatDate(item.closure_date),
+      item.closure_reason ?? '',
+      item.suspected_amount ?? '',
+      translateInsuranceType(item.insurance_type),
+    ]);
+
+    downloadCsv('fraud-cases-report.csv', headers, excelRows);
+  };
 
   const rows = useMemo(() => {
-    if (reportKey === 'fraudPerformance') {
-      const totalReceived = filteredCases.length;
-      const totalClosed = filteredCases.filter((item) => item.caseStatus === 'Closed').length;
-      const totalOpen = totalReceived - totalClosed;
-
-      const typeCounts = filteredCases.reduce<Record<string, number>>((acc, item) => {
-        acc[item.caseType] = (acc[item.caseType] ?? 0) + 1;
-        return acc;
-      }, {});
-
-      const mostFrequentType =
-        Object.entries(typeCounts).sort((a, b) => b[1] - a[1])[0]?.[0] ?? 'Fraud Suspected';
-
-      const totalAmount = filteredCases.reduce((sum, item) => {
-        const parsed = Number(String(item.suspectedAmount).replace(/[^\d.]/g, '')) || 0;
-        return sum + parsed;
-      }, 0);
-
-      return [
-        <tr key="fraud-performance-row">
-          <td>{totalReceived}</td>
-          <td>{totalClosed}</td>
-          <td>{totalOpen}</td>
-          <td>{language === 'ar' ? '5 أيام' : '5 days'}</td>
-          <td>{translateCaseType(mostFrequentType)}</td>
-          <td>{`SAR ${totalAmount.toLocaleString()}`}</td>
-        </tr>,
-      ];
+    if (isLoading) {
+      return (
+        <tr>
+          <td colSpan={headers.length}>{t.loading}</td>
+        </tr>
+      );
     }
 
-    return filteredCases.map((item, index) => {
-      const confirmedDate = item.caseEntryDate ?? '2026-04-03';
-      const suspensionDate = item.caseEntryDate ?? '2026-04-02';
-      const assignedUser = item.assignedUser ?? (language === 'ar' ? 'غير معيّن' : 'Unassigned');
+    if (errorMessage) {
+      return (
+        <tr>
+          <td colSpan={headers.length}>{errorMessage}</td>
+        </tr>
+      );
+    }
 
-      if (reportKey === 'fraudCases') {
-        return (
-          <tr key={item.id}>
-            <td>{item.id}</td>
-            <td>{item.claimId}</td>
-            <td>{item.caseEntryDate ?? '2026-04-01'}</td>
-            <td>{translateCaseSource(item.caseSource)}</td>
-            <td>{translateCaseType(item.caseType)}</td>
-            <td>{translatePriority(item.priorityLevel)}</td>
-            <td>{translateStatus(item.caseStatus)}</td>
-            <td>{language === 'ar' ? 'تمت مراجعة البلاغ من قبل وحدة مكافحة الاحتيال' : 'Reviewed by fraud unit'}</td>
-            <td>{item.caseStatus === 'Closed' ? item.caseEntryDate ?? '2026-04-07' : '-'}</td>
-            <td>{item.caseStatus === 'Closed' ? (language === 'ar' ? 'تمت المعالجة' : 'Resolved') : '-'}</td>
-            <td>{item.suspectedAmount}</td>
-            <td>{translateInsuranceType(item.insuranceType)}</td>
-          </tr>
-        );
-      }
+    if (filteredRows.length === 0) {
+      return (
+        <tr>
+          <td colSpan={headers.length}>{t.noRows}</td>
+        </tr>
+      );
+    }
 
-      if (reportKey === 'confirmedFraud') {
-        return (
-          <tr key={item.id}>
-            <td>{item.claimId}</td>
-            <td>{translateCaseType(item.caseType)}</td>
-            <td>{translateInsuranceType(item.insuranceType)}</td>
-            <td>{confirmedDate}</td>
-            <td>{language === 'ar' ? 'تحليل المؤشرات والمراجعة اليدوية' : 'Indicator analysis and manual review'}</td>
-            <td>{item.suspectedAmount}</td>
-            <td>{language === 'ar' ? 'تعليق المطالبة' : 'Claim suspended'}</td>
-            <td>{index % 2 === 0 ? (language === 'ar' ? 'الإدارة القانونية' : 'Legal Department') : '-'}</td>
-          </tr>
-        );
-      }
-
-      if (reportKey === 'fraudIndicators') {
-        return (
-          <tr key={item.id}>
-            <td>{item.claimId}</td>
-            <td>{translateCaseType(item.caseType)}</td>
-            <td>{language === 'ar' ? 'تم رصد نمط غير معتاد في البيانات' : 'Unusual pattern detected in case data'}</td>
-            <td>{index + 1}</td>
-            <td>{80 - index * 3}</td>
-            <td>{language === 'ar' ? 'يوصى بالتصعيد للمراجعة' : 'Recommended for escalation'}</td>
-            <td>{language === 'ar' ? 'قيد المراجعة' : 'Under Review'}</td>
-          </tr>
-        );
-      }
-
-      if (reportKey === 'suspendedClaims') {
-        return (
-          <tr key={item.id}>
-            <td>{item.claimId}</td>
-            <td>{suspensionDate}</td>
-            <td>{language === 'ar' ? 'اشتباه باحتيال يتطلب تحققًا إضافيًا' : 'Fraud suspicion requiring additional verification'}</td>
-            <td>{translatePriority(item.priorityLevel)}</td>
-            <td>{3 + index}</td>
-            <td>{translateStatus(item.caseStatus)}</td>
-            <td>{assignedUser}</td>
-          </tr>
-        );
-      }
-
-      return null;
-    });
-  }, [filteredCases, language, reportKey]);
+    return filteredRows.map((item) => (
+      <tr key={item.case_id ?? `${item.claim_id}-${item.case_entry_date}`}>
+        <td>{item.case_id ?? '-'}</td>
+        <td>{item.claim_id ?? '-'}</td>
+        <td>{formatDate(item.case_entry_date)}</td>
+        <td>{translateCaseSource(item.case_source)}</td>
+        <td>{translateCaseType(item.case_type)}</td>
+        <td>{translatePriority(item.priority_level)}</td>
+        <td>{translateStatus(item.case_status)}</td>
+        <td>{item.fraud_unit_notes || '-'}</td>
+        <td>{formatDate(item.closure_date)}</td>
+        <td>{item.closure_reason || '-'}</td>
+        <td>{formatMoney(item.suspected_amount)}</td>
+        <td>{translateInsuranceType(item.insurance_type)}</td>
+      </tr>
+    ));
+  }, [errorMessage, filteredRows, headers.length, isLoading, language, t]);
 
   return (
     <div dir={isArabic ? 'rtl' : 'ltr'}>
@@ -574,78 +440,84 @@ export default function ReportDetailsPage() {
         subtitle={t.previewSubtitle}
         action={
           <div className="actions-inline">
-            <button className="btn">{t.exportPdf}</button>
-            <button className="btn primary">{t.exportExcel}</button>
+            <button className="btn primary" onClick={exportFilteredExcel} type="button">
+              {t.exportExcel}
+            </button>
           </div>
         }
       />
 
-      {reportKey !== 'fraudPerformance' ? (
-        <div className="card report-detail-filters">
-          <input
-            placeholder={t.filterCaseId}
-            value={filters.caseId}
-            onChange={(event) => setFilters((current) => ({ ...current, caseId: event.target.value }))}
-          />
-          <input
-            placeholder={t.filterClaimId}
-            value={filters.claimId}
-            onChange={(event) => setFilters((current) => ({ ...current, claimId: event.target.value }))}
-          />
-          <select
-            value={filters.caseType}
-            onChange={(event) => setFilters((current) => ({ ...current, caseType: event.target.value }))}
-          >
-            <option value="">{t.allCaseTypes}</option>
-            <option value="Fraud Suspected">{t.fraudSuspected}</option>
-            <option value="Fraud Confirmed">{t.fraudConfirmedType}</option>
-            <option value="Violation">{t.violation}</option>
-            <option value="Document Mismatch">{t.documentMismatch}</option>
-            <option value="Identity Concern">{t.identityConcern}</option>
-          </select>
-          <select
-            value={filters.status}
-            onChange={(event) => setFilters((current) => ({ ...current, status: event.target.value }))}
-          >
-            <option value="">{t.allStatuses}</option>
-            <option value="New">{t.newLabel}</option>
-            <option value="Under Review">{t.underReview}</option>
-            <option value="Under Investigation">{t.underInvestigation}</option>
-            <option value="Pending Information">{t.pendingInformation}</option>
-            <option value="Fraud Confirmed">{t.fraudConfirmed}</option>
-            <option value="Closed">{t.closed}</option>
-          </select>
-          <select
-            value={filters.priority}
-            onChange={(event) => setFilters((current) => ({ ...current, priority: event.target.value }))}
-          >
-            <option value="">{t.allPriorities}</option>
-            <option value="High">{t.high}</option>
-            <option value="Medium">{t.medium}</option>
-            <option value="Low">{t.low}</option>
-          </select>
-          <select
-            value={filters.insuranceType}
-            onChange={(event) => setFilters((current) => ({ ...current, insuranceType: event.target.value }))}
-          >
-            <option value="">{t.allInsuranceTypes}</option>
-            <option value="Motor">{t.motor}</option>
-            <option value="Medical">{t.medical}</option>
-            <option value="Property">{t.property}</option>
-            <option value="Travel">{t.travel}</option>
-          </select>
-          <input
-            type="date"
-            value={dateRange.startDate}
-            onChange={(event) => setDateRange((current) => ({ ...current, startDate: event.target.value }))}
-          />
-          <input
-            type="date"
-            value={dateRange.endDate}
-            onChange={(event) => setDateRange((current) => ({ ...current, endDate: event.target.value }))}
-          />
-        </div>
-      ) : null}
+      <div className="card report-detail-filters">
+        <input
+          placeholder={t.filterCaseId}
+          value={filters.caseId}
+          onChange={(event) => setFilters((current) => ({ ...current, caseId: event.target.value }))}
+        />
+        <input
+          placeholder={t.filterClaimId}
+          value={filters.claimId}
+          onChange={(event) => setFilters((current) => ({ ...current, claimId: event.target.value }))}
+        />
+        <select
+          value={filters.caseSource}
+          onChange={(event) => setFilters((current) => ({ ...current, caseSource: event.target.value }))}
+        >
+          <option value="">{t.allCaseSources}</option>
+          <option value="Website">{t.website}</option>
+          <option value="Other">{t.other}</option>
+        </select>
+        <select
+          value={filters.caseType}
+          onChange={(event) => setFilters((current) => ({ ...current, caseType: event.target.value }))}
+        >
+          <option value="">{t.allCaseTypes}</option>
+          <option value="Fraud Confirmed">{t.fraudConfirmedType}</option>
+          <option value="Fraud Suspected">{t.fraudSuspected}</option>
+          <option value="Violation">{t.violation}</option>
+        </select>
+        <select
+          value={filters.priorityLevel}
+          onChange={(event) => setFilters((current) => ({ ...current, priorityLevel: event.target.value }))}
+        >
+          <option value="">{t.allPriorities}</option>
+          <option value="High">{t.high}</option>
+          <option value="Medium">{t.medium}</option>
+          <option value="Low">{t.low}</option>
+        </select>
+        <select
+          value={filters.caseStatus}
+          onChange={(event) => setFilters((current) => ({ ...current, caseStatus: event.target.value }))}
+        >
+          <option value="">{t.allStatuses}</option>
+          <option value="Open">{t.open}</option>
+          <option value="Closed">{t.closed}</option>
+        </select>
+        <select
+          value={filters.insuranceType}
+          onChange={(event) => setFilters((current) => ({ ...current, insuranceType: event.target.value }))}
+        >
+          <option value="">{t.allInsuranceTypes}</option>
+          <option value="Motor">{t.motor}</option>
+          <option value="Medical">{t.medical}</option>
+          <option value="Life">{t.life}</option>
+          <option value="General">{t.general}</option>
+        </select>
+        <input
+          aria-label={t.startDate}
+          type="date"
+          value={filters.startDate}
+          onChange={(event) => setFilters((current) => ({ ...current, startDate: event.target.value }))}
+        />
+        <input
+          aria-label={t.endDate}
+          type="date"
+          value={filters.endDate}
+          onChange={(event) => setFilters((current) => ({ ...current, endDate: event.target.value }))}
+        />
+        <button className="btn" type="button" onClick={() => setFilters(initialFilters)}>
+          {t.resetFilters}
+        </button>
+      </div>
 
       <Table headers={headers}>{rows}</Table>
     </div>

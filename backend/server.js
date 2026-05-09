@@ -1,11 +1,53 @@
 const express = require("express");
 const cors = require("cors");
 const PDFDocument = require("pdfkit");
+const multer = require("multer");
+const { createClient } = require("@supabase/supabase-js");
 require("dotenv").config();
 
 const pool = require("./db");
 
 const app = express();
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: {
+    fileSize: 15 * 1024 * 1024,
+  },
+});
+
+let supabaseClient = null;
+
+function getSupabaseClient() {
+  if (!process.env.SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
+    throw new Error("Supabase storage is not configured. Add SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY.");
+  }
+
+  if (!supabaseClient) {
+    supabaseClient = createClient(
+      process.env.SUPABASE_URL,
+      process.env.SUPABASE_SERVICE_ROLE_KEY,
+      {
+        auth: {
+          persistSession: false,
+          autoRefreshToken: false,
+        },
+      }
+    );
+  }
+
+  return supabaseClient;
+}
+
+function getStorageBucket() {
+  return process.env.SUPABASE_BUCKET || "fraud-documents";
+}
+
+function sanitizeFileName(fileName) {
+  return String(fileName || "document")
+    .replace(/[^a-zA-Z0-9._-]/g, "-")
+    .replace(/-+/g, "-")
+    .slice(0, 160);
+}
 
 app.use(
   cors({
@@ -701,6 +743,123 @@ app.get("/api/cases/:id/documents", async (req, res) => {
   }
 });
 
+app.post("/api/cases/:id/upload-document", upload.single("document"), async (req, res) => {
+  try {
+    const fraudCase = await findCaseByIdOrNumber(req.params.id);
+
+    if (!fraudCase) return res.status(404).json({ message: "Case not found" });
+
+    if (!req.file) {
+      return res.status(400).json({ message: "No file was uploaded. Use the field name 'document'." });
+    }
+
+    const supabase = getSupabaseClient();
+    const bucket = getStorageBucket();
+    const safeName = sanitizeFileName(req.file.originalname);
+    const storagePath = `cases/${fraudCase.case_number}/${Date.now()}-${safeName}`;
+
+    const uploadResult = await supabase.storage
+      .from(bucket)
+      .upload(storagePath, req.file.buffer, {
+        contentType: req.file.mimetype || "application/octet-stream",
+        upsert: false,
+      });
+
+    if (uploadResult.error) {
+      return res.status(500).json({
+        message: "Failed to upload file to Supabase Storage",
+        error: uploadResult.error.message,
+      });
+    }
+
+    const category = req.body.category || "supporting_document";
+    const uploadedBy = req.body.uploaded_by || "Admin";
+
+    const result = await pool.query(
+      `
+      INSERT INTO case_documents (
+        fraud_case_id,
+        file_name,
+        file_type,
+        file_url,
+        storage_path,
+        category,
+        uploaded_by
+      )
+      VALUES ($1::integer, $2::text, $3::text, $4::text, $5::text, $6::text, $7::text)
+      RETURNING *
+      `,
+      [
+        fraudCase.id,
+        req.file.originalname,
+        req.file.mimetype || null,
+        null,
+        storagePath,
+        category,
+        uploadedBy,
+      ]
+    );
+
+    res.status(201).json(result.rows[0]);
+  } catch (error) {
+    res.status(500).json({ message: "Failed to upload case document", error: error.message });
+  }
+});
+
+app.get("/api/documents/:documentId/download", async (req, res) => {
+  try {
+    const { documentId } = req.params;
+
+    const result = await pool.query(
+      `
+      SELECT *
+      FROM case_documents
+      WHERE id = $1::integer
+      LIMIT 1
+      `,
+      [documentId]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ message: "Document not found" });
+    }
+
+    const document = result.rows[0];
+
+    if (!document.storage_path) {
+      if (document.file_url) return res.redirect(document.file_url);
+      return res.status(404).json({ message: "Document has no storage path or URL" });
+    }
+
+    const supabase = getSupabaseClient();
+    const bucket = getStorageBucket();
+
+    const downloadResult = await supabase.storage
+      .from(bucket)
+      .download(document.storage_path);
+
+    if (downloadResult.error) {
+      return res.status(500).json({
+        message: "Failed to download document from Supabase Storage",
+        error: downloadResult.error.message,
+      });
+    }
+
+    const arrayBuffer = await downloadResult.data.arrayBuffer();
+    const buffer = Buffer.from(arrayBuffer);
+    const fileName = sanitizeFileName(document.file_name || "document");
+
+    res.setHeader("Content-Type", document.file_type || "application/octet-stream");
+    res.setHeader("Content-Disposition", `attachment; filename="${fileName}"`);
+    res.setHeader("Content-Length", buffer.length);
+    res.setHeader("Cache-Control", "private, no-store");
+
+    return res.send(buffer);
+  } catch (error) {
+    res.status(500).json({ message: "Failed to download document", error: error.message });
+  }
+});
+
 app.post("/api/cases/:id/documents", async (req, res) => {
   try {
     const fraudCase = await findCaseByIdOrNumber(req.params.id);
@@ -862,6 +1021,37 @@ app.get("/api/cases/:id/export-pdf", async (req, res) => {
     doc.end();
   } catch (error) {
     res.status(500).json({ message: "Failed to export case PDF", error: error.message });
+  }
+});
+
+
+app.get("/api/reports/fraud-cases", async (req, res) => {
+  try {
+    const result = await pool.query(`
+      SELECT
+        case_number AS case_id,
+        claim_id,
+        case_entry_date,
+        case_source,
+        case_type,
+        priority_level,
+        case_status,
+        fraud_unit_notes,
+        closure_date,
+        closure_reason,
+        suspected_amount,
+        insurance_type
+      FROM fraud_cases
+      WHERE COALESCE(case_status, '') <> 'Draft'
+      ORDER BY case_entry_date DESC NULLS LAST, created_at DESC
+    `);
+
+    res.json(result.rows);
+  } catch (error) {
+    res.status(500).json({
+      message: "Failed to fetch fraud cases report",
+      error: error.message,
+    });
   }
 });
 
