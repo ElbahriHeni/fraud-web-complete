@@ -1025,6 +1025,7 @@ app.get("/api/cases/:id/export-pdf", async (req, res) => {
 });
 
 
+
 app.get("/api/reports/fraud-cases", async (req, res) => {
   try {
     const result = await pool.query(`
@@ -1042,7 +1043,7 @@ app.get("/api/reports/fraud-cases", async (req, res) => {
         suspected_amount,
         insurance_type
       FROM fraud_cases
-      WHERE COALESCE(case_status, '') <> 'Draft'
+      WHERE COALESCE(case_status, '') NOT IN ('Draft', 'مسودة')
       ORDER BY case_entry_date DESC NULLS LAST, created_at DESC
     `);
 
@@ -1055,27 +1056,28 @@ app.get("/api/reports/fraud-cases", async (req, res) => {
   }
 });
 
-
 app.get("/api/reports/confirmed-fraud", async (req, res) => {
   try {
     const result = await pool.query(`
       SELECT
         case_number AS case_id,
         claim_id,
+        claim_type,
+        insurance_type,
+        fraud_confirmed_date,
+        fraud_detection_method,
+        fraud_amount,
+        action_taken,
+        referred_entity,
         case_entry_date,
         case_source,
         case_type,
         priority_level,
-        case_status,
-        fraud_unit_notes,
-        closure_date,
-        closure_reason,
-        suspected_amount,
-        insurance_type
+        case_status
       FROM fraud_cases
-      WHERE COALESCE(case_status, '') <> 'Draft'
+      WHERE COALESCE(case_status, '') NOT IN ('Draft', 'مسودة')
         AND case_type IN ('Fraud Confirmed', 'احتيال مؤكد')
-      ORDER BY case_entry_date DESC NULLS LAST, created_at DESC
+      ORDER BY fraud_confirmed_date DESC NULLS LAST, case_entry_date DESC NULLS LAST, created_at DESC
     `);
 
     res.json(result.rows);
@@ -1087,26 +1089,26 @@ app.get("/api/reports/confirmed-fraud", async (req, res) => {
   }
 });
 
-
 app.get("/api/reports/fraud-indicators", async (req, res) => {
   try {
     const result = await pool.query(`
       SELECT
         case_number AS case_id,
         claim_id,
+        fraud_indicator_type,
+        indicator_description,
+        occurrence_count,
+        risk_level,
+        system_recommendation,
+        fraud_officer_decision,
         case_entry_date,
         case_source,
         case_type,
         priority_level,
         case_status,
-        fraud_unit_notes,
-        closure_date,
-        closure_reason,
-        suspected_amount,
         insurance_type
       FROM fraud_cases
-      WHERE COALESCE(case_status, '') <> 'Draft'
-        AND case_status IN ('Open', 'Closed')
+      WHERE COALESCE(case_status, '') NOT IN ('Draft', 'مسودة')
         AND case_type IN ('Fraud Confirmed', 'Fraud Suspected', 'احتيال مؤكد', 'اشتباه الاحتيال')
       ORDER BY case_entry_date DESC NULLS LAST, created_at DESC
     `);
@@ -1120,33 +1122,72 @@ app.get("/api/reports/fraud-indicators", async (req, res) => {
   }
 });
 
-
 app.get("/api/reports/suspended-claims", async (req, res) => {
   try {
     const result = await pool.query(`
       SELECT
         case_number AS case_id,
         claim_id,
+        suspension_date,
+        suspension_reason,
+        priority_level,
+        case_status,
+        assigned_user,
         case_entry_date,
         case_source,
         case_type,
-        priority_level,
-        case_status,
-        fraud_unit_notes,
-        closure_date,
-        closure_reason,
-        suspected_amount,
-        insurance_type
+        insurance_type,
+        claim_status
       FROM fraud_cases
-      WHERE COALESCE(case_status, '') <> 'Draft'
+      WHERE COALESCE(case_status, '') NOT IN ('Draft', 'مسودة')
         AND claim_status IN ('Suspended', 'معلق')
-      ORDER BY case_entry_date DESC NULLS LAST, created_at DESC
+      ORDER BY suspension_date DESC NULLS LAST, case_entry_date DESC NULLS LAST, created_at DESC
     `);
 
     res.json(result.rows);
   } catch (error) {
     res.status(500).json({
       message: "Failed to fetch suspended claims report",
+      error: error.message,
+    });
+  }
+});
+
+app.get("/api/reports/fraud-performance", async (req, res) => {
+  try {
+    const result = await pool.query(`
+      SELECT
+        fc.case_number AS case_id,
+        fc.claim_id,
+        fc.case_entry_date,
+        fc.case_source,
+        fc.case_type,
+        fc.priority_level,
+        fc.case_status,
+        fc.insurance_type,
+        fc.fraud_amount,
+        fc.closure_date,
+        (
+          SELECT MIN(cal.action_time)
+          FROM case_action_logs cal
+          WHERE cal.fraud_case_id = fc.id
+            AND cal.status IN ('Open', 'مفتوح')
+        ) AS open_time,
+        (
+          SELECT MIN(cal.action_time)
+          FROM case_action_logs cal
+          WHERE cal.fraud_case_id = fc.id
+            AND cal.status IN ('Closed', 'مغلق')
+        ) AS close_time
+      FROM fraud_cases fc
+      WHERE COALESCE(fc.case_status, '') NOT IN ('Draft', 'مسودة')
+      ORDER BY fc.case_entry_date DESC NULLS LAST, fc.created_at DESC
+    `);
+
+    res.json(result.rows);
+  } catch (error) {
+    res.status(500).json({
+      message: "Failed to fetch fraud performance report",
       error: error.message,
     });
   }

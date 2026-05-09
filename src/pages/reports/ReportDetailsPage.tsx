@@ -12,19 +12,41 @@ type ReportKey =
   | 'suspendedClaims'
   | 'fraudPerformance';
 
-type FraudCaseReportRow = {
-  case_id: string | null;
-  claim_id: string | null;
-  case_entry_date: string | null;
-  case_source: string | null;
-  case_type: string | null;
-  priority_level: string | null;
-  case_status: string | null;
-  fraud_unit_notes: string | null;
-  closure_date: string | null;
-  closure_reason: string | null;
-  suspected_amount: string | number | null;
-  insurance_type: string | null;
+type ReportRow = {
+  case_id?: string | null;
+  claim_id?: string | null;
+  case_entry_date?: string | null;
+  case_source?: string | null;
+  case_type?: string | null;
+  priority_level?: string | null;
+  case_status?: string | null;
+  fraud_unit_notes?: string | null;
+  closure_date?: string | null;
+  closure_reason?: string | null;
+  suspected_amount?: string | number | null;
+  insurance_type?: string | null;
+
+  claim_type?: string | null;
+  fraud_confirmed_date?: string | null;
+  fraud_detection_method?: string | null;
+  fraud_amount?: string | number | null;
+  action_taken?: string | null;
+  referred_entity?: string | null;
+
+  fraud_indicator_type?: string | null;
+  indicator_description?: string | null;
+  occurrence_count?: string | number | null;
+  risk_level?: string | null;
+  system_recommendation?: string | null;
+  fraud_officer_decision?: string | null;
+
+  suspension_date?: string | null;
+  suspension_reason?: string | null;
+  assigned_user?: string | null;
+  claim_status?: string | null;
+
+  open_time?: string | null;
+  close_time?: string | null;
 };
 
 type FiltersState = {
@@ -45,6 +67,7 @@ type ReportPageCopy = {
   confirmedFraudSubtitle: string;
   fraudIndicatorsSubtitle: string;
   suspendedClaimsSubtitle: string;
+  fraudPerformanceSubtitle: string;
   exportExcel: string;
   resetFilters: string;
   loading: string;
@@ -52,6 +75,7 @@ type ReportPageCopy = {
   confirmedFraudError: string;
   fraudIndicatorsError: string;
   suspendedClaimsError: string;
+  fraudPerformanceError: string;
   noRows: string;
   filterCaseId: string;
   filterClaimId: string;
@@ -62,6 +86,7 @@ type ReportPageCopy = {
   allInsuranceTypes: string;
   startDate: string;
   endDate: string;
+
   caseId: string;
   claimId: string;
   caseEntryDate: string;
@@ -74,6 +99,37 @@ type ReportPageCopy = {
   closureReason: string;
   suspectedAmount: string;
   insuranceType: string;
+
+  claimType: string;
+  fraudConfirmedDate: string;
+  fraudDetectionMethod: string;
+  fraudAmount: string;
+  actionTaken: string;
+  referredEntity: string;
+
+  fraudIndicatorType: string;
+  indicatorDescription: string;
+  occurrenceCount: string;
+  riskLevel: string;
+  systemRecommendation: string;
+  fraudOfficerDecision: string;
+
+  suspensionDate: string;
+  suspensionReason: string;
+  suspensionDuration: string;
+  currentStatus: string;
+  responsibleEmployee: string;
+
+  metric: string;
+  value: string;
+  receivedCasesCount: string;
+  closedCasesCount: string;
+  openCasesCount: string;
+  averageProcessingTime: string;
+  mostRepeatedFraudType: string;
+  totalFraudAmount: string;
+  notCalculatedYet: string;
+
   website: string;
   other: string;
   fraudConfirmedType: string;
@@ -88,6 +144,12 @@ type ReportPageCopy = {
   medical: string;
   life: string;
   general: string;
+  day: string;
+  days: string;
+  hour: string;
+  hours: string;
+  minute: string;
+  minutes: string;
   reportTitles: Record<ReportKey, string>;
 };
 
@@ -95,9 +157,10 @@ const pageCopy: Record<AppLanguage, ReportPageCopy> = {
   en: {
     eyebrow: 'Report',
     previewSubtitle: 'All submitted fraud cases excluding draft cases.',
-    confirmedFraudSubtitle: 'All confirmed fraud cases where the case type is Fraud Confirmed.',
-    fraudIndicatorsSubtitle: 'All open and closed fraud-related cases for fraud indicator review. Draft cases are excluded.',
-    suspendedClaimsSubtitle: 'All non-draft cases where the claim status is suspended.',
+    confirmedFraudSubtitle: 'Confirmed fraud cases only. Draft cases are excluded.',
+    fraudIndicatorsSubtitle: 'Fraud confirmed and suspected fraud cases only. Draft cases are excluded.',
+    suspendedClaimsSubtitle: 'Suspended claims due to suspected fraud. Draft cases are excluded.',
+    fraudPerformanceSubtitle: 'Fraud unit performance summary for all non-draft cases.',
     exportExcel: 'Export Excel',
     resetFilters: 'Reset Filters',
     loading: 'Loading report data...',
@@ -105,6 +168,7 @@ const pageCopy: Record<AppLanguage, ReportPageCopy> = {
     confirmedFraudError: 'Could not load confirmed fraud report from backend.',
     fraudIndicatorsError: 'Could not load fraud indicators report from backend.',
     suspendedClaimsError: 'Could not load suspended claims report from backend.',
+    fraudPerformanceError: 'Could not load fraud performance report from backend.',
     noRows: 'No matching cases found.',
     filterCaseId: 'Filter Case Id',
     filterClaimId: 'Filter Claim Id',
@@ -115,6 +179,7 @@ const pageCopy: Record<AppLanguage, ReportPageCopy> = {
     allInsuranceTypes: 'All Insurance Types',
     startDate: 'Start Date',
     endDate: 'End Date',
+
     caseId: 'Case Id',
     claimId: 'Claim Id',
     caseEntryDate: 'Case Entry Date',
@@ -127,6 +192,37 @@ const pageCopy: Record<AppLanguage, ReportPageCopy> = {
     closureReason: 'Closure Reason',
     suspectedAmount: 'Suspected Amount',
     insuranceType: 'Insurance Type',
+
+    claimType: 'Claim Type',
+    fraudConfirmedDate: 'Fraud Confirmed Date',
+    fraudDetectionMethod: 'Fraud Detection Method',
+    fraudAmount: 'Fraud Amount',
+    actionTaken: 'Action Taken',
+    referredEntity: 'Referred Entity',
+
+    fraudIndicatorType: 'Fraud Indicator Type',
+    indicatorDescription: 'Indicator Description',
+    occurrenceCount: 'Occurrence Count',
+    riskLevel: 'Risk Level',
+    systemRecommendation: 'System Recommendation',
+    fraudOfficerDecision: 'Fraud Unit Officer Decision',
+
+    suspensionDate: 'Suspension Date',
+    suspensionReason: 'Suspension Reason',
+    suspensionDuration: 'Suspension Duration',
+    currentStatus: 'Current Status',
+    responsibleEmployee: 'Responsible Employee',
+
+    metric: 'Metric',
+    value: 'Value',
+    receivedCasesCount: 'Received Cases Count',
+    closedCasesCount: 'Closed Cases Count',
+    openCasesCount: 'Open Cases Count',
+    averageProcessingTime: 'Average Case Processing Time',
+    mostRepeatedFraudType: 'Most Repeated Fraud Type',
+    totalFraudAmount: 'Total Fraud Amount',
+    notCalculatedYet: 'Not calculated yet',
+
     website: 'Website',
     other: 'Other',
     fraudConfirmedType: 'Fraud Confirmed',
@@ -141,6 +237,12 @@ const pageCopy: Record<AppLanguage, ReportPageCopy> = {
     medical: 'Medical',
     life: 'Life',
     general: 'General',
+    day: 'day',
+    days: 'days',
+    hour: 'hour',
+    hours: 'hours',
+    minute: 'minute',
+    minutes: 'minutes',
     reportTitles: {
       fraudCases: 'Fraud Cases Report',
       confirmedFraud: 'Confirmed Fraud Report',
@@ -152,9 +254,10 @@ const pageCopy: Record<AppLanguage, ReportPageCopy> = {
   ar: {
     eyebrow: 'تقرير',
     previewSubtitle: 'جميع بلاغات الاحتيال المعتمدة باستثناء البلاغات المسودة.',
-    confirmedFraudSubtitle: 'جميع البلاغات التي تم تصنيف نوع البلاغ فيها كاحتيال مؤكد.',
-    fraudIndicatorsSubtitle: 'جميع البلاغات المفتوحة والمغلقة المرتبطة بالاحتيال لمراجعة مؤشرات الاحتيال، مع استبعاد المسودات.',
-    suspendedClaimsSubtitle: 'جميع البلاغات غير المسودة التي تكون حالة المطالبة فيها معلقة.',
+    confirmedFraudSubtitle: 'البلاغات المثبتة احتيال فقط، مع استبعاد المسودات.',
+    fraudIndicatorsSubtitle: 'بلاغات الاحتيال المؤكد واشتباه الاحتيال فقط، مع استبعاد المسودات.',
+    suspendedClaimsSubtitle: 'المطالبات المعلقة بسبب الاشتباه بالاحتيال، مع استبعاد المسودات.',
+    fraudPerformanceSubtitle: 'ملخص أداء وحدة مكافحة الاحتيال لجميع البلاغات غير المسودة.',
     exportExcel: 'تصدير Excel',
     resetFilters: 'إعادة ضبط الفلاتر',
     loading: 'جاري تحميل بيانات التقرير...',
@@ -162,6 +265,7 @@ const pageCopy: Record<AppLanguage, ReportPageCopy> = {
     confirmedFraudError: 'تعذر تحميل تقرير البلاغات المثبتة احتيال من الخادم.',
     fraudIndicatorsError: 'تعذر تحميل تقرير مؤشرات الاحتيال من الخادم.',
     suspendedClaimsError: 'تعذر تحميل تقرير المطالبات المعلقة من الخادم.',
+    fraudPerformanceError: 'تعذر تحميل تقرير أداء وحدة مكافحة الاحتيال من الخادم.',
     noRows: 'لا توجد بلاغات مطابقة.',
     filterCaseId: 'تصفية رقم البلاغ',
     filterClaimId: 'تصفية رقم المطالبة',
@@ -172,6 +276,7 @@ const pageCopy: Record<AppLanguage, ReportPageCopy> = {
     allInsuranceTypes: 'جميع أنواع التأمين',
     startDate: 'تاريخ البداية',
     endDate: 'تاريخ النهاية',
+
     caseId: 'رقم البلاغ',
     claimId: 'رقم المطالبة',
     caseEntryDate: 'تاريخ إدخال البلاغ',
@@ -184,6 +289,37 @@ const pageCopy: Record<AppLanguage, ReportPageCopy> = {
     closureReason: 'سبب الإغلاق',
     suspectedAmount: 'المبلغ محل الاشتباه',
     insuranceType: 'نوع التأمين',
+
+    claimType: 'نوع المطالبة',
+    fraudConfirmedDate: 'تاريخ ثبوت الاحتيال',
+    fraudDetectionMethod: 'آلية اكتشاف الاحتيال',
+    fraudAmount: 'المبلغ المرتبط بالاحتيال',
+    actionTaken: 'الإجراء المتخذ',
+    referredEntity: 'الجهة المحالة لها',
+
+    fraudIndicatorType: 'نوع مؤشر الاحتيال',
+    indicatorDescription: 'وصف المؤشر',
+    occurrenceCount: 'عدد مرات التكرار',
+    riskLevel: 'درجة الخطورة',
+    systemRecommendation: 'التوصية الآلية',
+    fraudOfficerDecision: 'قرار موظف وحدة مكافحة الاحتيال',
+
+    suspensionDate: 'تاريخ التعليق',
+    suspensionReason: 'سبب التعليق',
+    suspensionDuration: 'مدة التعليق',
+    currentStatus: 'الحالة الحالية',
+    responsibleEmployee: 'الموظف المسؤول',
+
+    metric: 'المؤشر',
+    value: 'القيمة',
+    receivedCasesCount: 'عدد البلاغات المستلمة',
+    closedCasesCount: 'عدد البلاغات المغلقة',
+    openCasesCount: 'عدد البلاغات المفتوحة',
+    averageProcessingTime: 'متوسط زمن معالجة البلاغ',
+    mostRepeatedFraudType: 'أكثر أنواع الاحتيال تكرارًا',
+    totalFraudAmount: 'إجمالي المبالغ المرتبطة بالاحتيال',
+    notCalculatedYet: 'لم يتم احتسابه بعد',
+
     website: 'الموقع',
     other: 'أخرى',
     fraudConfirmedType: 'احتيال مؤكد',
@@ -198,6 +334,12 @@ const pageCopy: Record<AppLanguage, ReportPageCopy> = {
     medical: 'طبي',
     life: 'حياة',
     general: 'عام',
+    day: 'يوم',
+    days: 'أيام',
+    hour: 'ساعة',
+    hours: 'ساعات',
+    minute: 'دقيقة',
+    minutes: 'دقائق',
     reportTitles: {
       fraudCases: 'تقرير البلاغات',
       confirmedFraud: 'تقرير البلاغات المثبتة احتيال',
@@ -214,6 +356,7 @@ const routeToReportKey: Record<string, ReportKey> = {
   'Fraud Indicators Report': 'fraudIndicators',
   'Suspended Claims Report': 'suspendedClaims',
   'Fraud Performance Report': 'fraudPerformance',
+  'Report Performance Fraud': 'fraudPerformance',
 };
 
 const initialFilters: FiltersState = {
@@ -232,20 +375,20 @@ function normalize(value: unknown) {
   return String(value ?? '').trim().toLowerCase();
 }
 
-function formatDate(value: string | null) {
+function formatDate(value?: string | null) {
   if (!value) return '-';
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return value;
   return date.toLocaleDateString('en-GB');
 }
 
-function formatMoney(value: string | number | null) {
+function formatMoney(value?: string | number | null) {
   const numeric = Number(value ?? 0);
   if (Number.isNaN(numeric)) return String(value ?? '-');
   return `SAR ${numeric.toLocaleString(undefined, { maximumFractionDigits: 2 })}`;
 }
 
-function toDateKey(value: string | null) {
+function toDateKey(value?: string | null) {
   if (!value) return '';
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return '';
@@ -273,6 +416,40 @@ function downloadCsv(fileName: string, headers: string[], rows: Array<Array<stri
   URL.revokeObjectURL(url);
 }
 
+function getDurationMs(start?: string | null, end?: string | null) {
+  if (!start || !end) return null;
+  const startDate = new Date(start);
+  const endDate = new Date(end);
+
+  if (Number.isNaN(startDate.getTime()) || Number.isNaN(endDate.getTime())) return null;
+
+  const diff = endDate.getTime() - startDate.getTime();
+  return diff > 0 ? diff : null;
+}
+
+function formatDurationFromMs(ms: number | null, t: ReportPageCopy) {
+  if (ms === null || Number.isNaN(ms)) return '-';
+
+  const totalMinutes = Math.floor(ms / 60000);
+  const days = Math.floor(totalMinutes / (60 * 24));
+  const hours = Math.floor((totalMinutes - days * 60 * 24) / 60);
+  const minutes = totalMinutes % 60;
+
+  const dayLabel = days === 1 ? t.day : t.days;
+  const hourLabel = hours === 1 ? t.hour : t.hours;
+  const minuteLabel = minutes === 1 ? t.minute : t.minutes;
+
+  return `${days} ${dayLabel}, ${hours} ${hourLabel}, ${minutes} ${minuteLabel}`;
+}
+
+function formatDurationFromDateToNow(value: string | null | undefined, t: ReportPageCopy) {
+  if (!value) return '-';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return '-';
+  const diff = Date.now() - date.getTime();
+  return formatDurationFromMs(diff > 0 ? diff : 0, t);
+}
+
 export default function ReportDetailsPage() {
   const { reportName } = useParams();
   const { language } = useOutletContext<{ language: AppLanguage }>();
@@ -284,6 +461,7 @@ export default function ReportDetailsPage() {
   const isConfirmedFraudReport = reportKey === 'confirmedFraud';
   const isFraudIndicatorsReport = reportKey === 'fraudIndicators';
   const isSuspendedClaimsReport = reportKey === 'suspendedClaims';
+  const isFraudPerformanceReport = reportKey === 'fraudPerformance';
 
   const reportEndpoint = isConfirmedFraudReport
     ? '/api/reports/confirmed-fraud'
@@ -291,7 +469,9 @@ export default function ReportDetailsPage() {
       ? '/api/reports/fraud-indicators'
       : isSuspendedClaimsReport
         ? '/api/reports/suspended-claims'
-        : '/api/reports/fraud-cases';
+        : isFraudPerformanceReport
+          ? '/api/reports/fraud-performance'
+          : '/api/reports/fraud-cases';
 
   const reportSubtitle = isConfirmedFraudReport
     ? t.confirmedFraudSubtitle
@@ -299,7 +479,9 @@ export default function ReportDetailsPage() {
       ? t.fraudIndicatorsSubtitle
       : isSuspendedClaimsReport
         ? t.suspendedClaimsSubtitle
-        : t.previewSubtitle;
+        : isFraudPerformanceReport
+          ? t.fraudPerformanceSubtitle
+          : t.previewSubtitle;
 
   const reportError = isConfirmedFraudReport
     ? t.confirmedFraudError
@@ -307,10 +489,12 @@ export default function ReportDetailsPage() {
       ? t.fraudIndicatorsError
       : isSuspendedClaimsReport
         ? t.suspendedClaimsError
-        : t.error;
+        : isFraudPerformanceReport
+          ? t.fraudPerformanceError
+          : t.error;
 
   const [filters, setFilters] = useState<FiltersState>(initialFilters);
-  const [reportRows, setReportRows] = useState<FraudCaseReportRow[]>([]);
+  const [reportRows, setReportRows] = useState<ReportRow[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState('');
 
@@ -321,7 +505,7 @@ export default function ReportDetailsPage() {
       try {
         setIsLoading(true);
         setErrorMessage('');
-        const data = await apiGet<FraudCaseReportRow[]>(reportEndpoint);
+        const data = await apiGet<ReportRow[]>(reportEndpoint);
         if (isMounted) setReportRows(data);
       } catch (error) {
         console.error(error);
@@ -338,14 +522,14 @@ export default function ReportDetailsPage() {
     };
   }, [reportEndpoint, reportError]);
 
-  const translateCaseSource = (value: string | null) => {
+  const translateCaseSource = (value?: string | null) => {
     if (language !== 'ar') return value || '-';
     if (value === 'Website') return t.website;
     if (value === 'Other') return t.other;
     return value || '-';
   };
 
-  const translateCaseType = (value: string | null) => {
+  const translateCaseType = (value?: string | null) => {
     if (language !== 'ar') return value || '-';
     if (value === 'Fraud Confirmed') return t.fraudConfirmedType;
     if (value === 'Fraud Suspected') return t.fraudSuspected;
@@ -353,7 +537,7 @@ export default function ReportDetailsPage() {
     return value || '-';
   };
 
-  const translatePriority = (value: string | null) => {
+  const translatePriority = (value?: string | null) => {
     if (language !== 'ar') return value || '-';
     if (value === 'High') return t.high;
     if (value === 'Medium') return t.medium;
@@ -361,14 +545,14 @@ export default function ReportDetailsPage() {
     return value || '-';
   };
 
-  const translateStatus = (value: string | null) => {
+  const translateStatus = (value?: string | null) => {
     if (language !== 'ar') return value || '-';
     if (value === 'Open') return t.open;
     if (value === 'Closed') return t.closed;
     return value || '-';
   };
 
-  const translateInsuranceType = (value: string | null) => {
+  const translateInsuranceType = (value?: string | null) => {
     if (language !== 'ar') return value || '-';
     if (value === 'Motor') return t.motor;
     if (value === 'Medical') return t.medical;
@@ -379,7 +563,8 @@ export default function ReportDetailsPage() {
 
   const filteredRows = useMemo(() => {
     return reportRows.filter((item) => {
-      if (normalize(item.case_status) === 'draft') return false;
+      if (normalize(item.case_status) === 'draft' || normalize(item.case_status) === 'مسودة') return false;
+
       const entryDate = toDateKey(item.case_entry_date);
       const matchesStart = !filters.startDate || (entryDate && entryDate >= filters.startDate);
       const matchesEnd = !filters.endDate || (entryDate && entryDate <= filters.endDate);
@@ -398,8 +583,76 @@ export default function ReportDetailsPage() {
     });
   }, [filters, reportRows]);
 
-  const headers = useMemo(
-    () => [
+  const performanceMetrics = useMemo(() => {
+    const receivedCasesCount = filteredRows.length;
+    const closedCasesCount = filteredRows.filter((item) => item.case_status === 'Closed' || item.case_status === 'مغلق').length;
+    const openCasesCount = filteredRows.filter((item) => item.case_status === 'Open' || item.case_status === 'مفتوح').length;
+    const totalFraudAmount = filteredRows.reduce((sum, item) => sum + Number(item.fraud_amount ?? 0), 0);
+
+    const processingDurations = filteredRows
+      .filter((item) => item.case_status === 'Closed' || item.case_status === 'مغلق')
+      .map((item) => {
+        const openTime = item.open_time || item.case_entry_date;
+        const closeTime = item.close_time || item.closure_date;
+        return getDurationMs(openTime, closeTime);
+      })
+      .filter((value): value is number => value !== null);
+
+    const averageProcessingMs = processingDurations.length > 0
+      ? processingDurations.reduce((sum, value) => sum + value, 0) / processingDurations.length
+      : null;
+
+    return [
+      { metric: t.receivedCasesCount, value: receivedCasesCount.toLocaleString() },
+      { metric: t.closedCasesCount, value: closedCasesCount.toLocaleString() },
+      { metric: t.openCasesCount, value: openCasesCount.toLocaleString() },
+      { metric: t.averageProcessingTime, value: formatDurationFromMs(averageProcessingMs, t) },
+      { metric: t.mostRepeatedFraudType, value: t.notCalculatedYet },
+      { metric: t.totalFraudAmount, value: formatMoney(totalFraudAmount) },
+    ];
+  }, [filteredRows, t]);
+
+  const reportHeaders = useMemo(() => {
+    if (isFraudPerformanceReport) return [t.metric, t.value];
+
+    if (isConfirmedFraudReport) {
+      return [
+        t.claimId,
+        t.claimType,
+        t.insuranceType,
+        t.fraudConfirmedDate,
+        t.fraudDetectionMethod,
+        t.fraudAmount,
+        t.actionTaken,
+        t.referredEntity,
+      ];
+    }
+
+    if (isFraudIndicatorsReport) {
+      return [
+        t.claimId,
+        t.fraudIndicatorType,
+        t.indicatorDescription,
+        t.occurrenceCount,
+        t.riskLevel,
+        t.systemRecommendation,
+        t.fraudOfficerDecision,
+      ];
+    }
+
+    if (isSuspendedClaimsReport) {
+      return [
+        t.claimId,
+        t.suspensionDate,
+        t.suspensionReason,
+        t.priorityLevel,
+        t.suspensionDuration,
+        t.currentStatus,
+        t.responsibleEmployee,
+      ];
+    }
+
+    return [
       t.caseId,
       t.claimId,
       t.caseEntryDate,
@@ -412,12 +665,48 @@ export default function ReportDetailsPage() {
       t.closureReason,
       t.suspectedAmount,
       t.insuranceType,
-    ],
-    [t]
-  );
+    ];
+  }, [isConfirmedFraudReport, isFraudIndicatorsReport, isFraudPerformanceReport, isSuspendedClaimsReport, t]);
 
-  const exportFilteredExcel = () => {
-    const excelRows = filteredRows.map((item) => [
+  const getDisplayRow = (item: ReportRow): Array<string | number | null> => {
+    if (isConfirmedFraudReport) {
+      return [
+        item.claim_id ?? '',
+        item.claim_type ?? '',
+        translateInsuranceType(item.insurance_type),
+        formatDate(item.fraud_confirmed_date),
+        item.fraud_detection_method ?? '',
+        item.fraud_amount ?? '',
+        item.action_taken ?? '',
+        item.referred_entity ?? '',
+      ];
+    }
+
+    if (isFraudIndicatorsReport) {
+      return [
+        item.claim_id ?? '',
+        item.fraud_indicator_type ?? '',
+        item.indicator_description ?? '',
+        item.occurrence_count ?? '',
+        item.risk_level ?? '',
+        item.system_recommendation ?? '',
+        item.fraud_officer_decision ?? '',
+      ];
+    }
+
+    if (isSuspendedClaimsReport) {
+      return [
+        item.claim_id ?? '',
+        formatDate(item.suspension_date),
+        item.suspension_reason ?? '',
+        translatePriority(item.priority_level),
+        formatDurationFromDateToNow(item.suspension_date, t),
+        translateStatus(item.case_status),
+        item.assigned_user ?? '',
+      ];
+    }
+
+    return [
       item.case_id ?? '',
       item.claim_id ?? '',
       formatDate(item.case_entry_date),
@@ -430,7 +719,20 @@ export default function ReportDetailsPage() {
       item.closure_reason ?? '',
       item.suspected_amount ?? '',
       translateInsuranceType(item.insurance_type),
-    ]);
+    ];
+  };
+
+  const exportFilteredExcel = () => {
+    if (isFraudPerformanceReport) {
+      downloadCsv(
+        'fraud-performance-report.csv',
+        reportHeaders,
+        performanceMetrics.map((item) => [item.metric, item.value])
+      );
+      return;
+    }
+
+    const excelRows = filteredRows.map((item) => getDisplayRow(item));
 
     downloadCsv(
       isConfirmedFraudReport
@@ -440,16 +742,16 @@ export default function ReportDetailsPage() {
           : isSuspendedClaimsReport
             ? 'suspended-claims-report.csv'
             : 'fraud-cases-report.csv',
-      headers,
+      reportHeaders,
       excelRows
     );
   };
 
-  const rows = useMemo(() => {
+  const tableRows = useMemo(() => {
     if (isLoading) {
       return (
         <tr>
-          <td colSpan={headers.length}>{t.loading}</td>
+          <td colSpan={reportHeaders.length}>{t.loading}</td>
         </tr>
       );
     }
@@ -457,36 +759,38 @@ export default function ReportDetailsPage() {
     if (errorMessage) {
       return (
         <tr>
-          <td colSpan={headers.length}>{errorMessage}</td>
+          <td colSpan={reportHeaders.length}>{errorMessage}</td>
         </tr>
       );
+    }
+
+    if (isFraudPerformanceReport) {
+      return performanceMetrics.map((item) => (
+        <tr key={item.metric}>
+          <td>{item.metric}</td>
+          <td>{item.value}</td>
+        </tr>
+      ));
     }
 
     if (filteredRows.length === 0) {
       return (
         <tr>
-          <td colSpan={headers.length}>{t.noRows}</td>
+          <td colSpan={reportHeaders.length}>{t.noRows}</td>
         </tr>
       );
     }
 
-    return filteredRows.map((item) => (
-      <tr key={item.case_id ?? `${item.claim_id}-${item.case_entry_date}`}>
-        <td>{item.case_id ?? '-'}</td>
-        <td>{item.claim_id ?? '-'}</td>
-        <td>{formatDate(item.case_entry_date)}</td>
-        <td>{translateCaseSource(item.case_source)}</td>
-        <td>{translateCaseType(item.case_type)}</td>
-        <td>{translatePriority(item.priority_level)}</td>
-        <td>{translateStatus(item.case_status)}</td>
-        <td>{item.fraud_unit_notes || '-'}</td>
-        <td>{formatDate(item.closure_date)}</td>
-        <td>{item.closure_reason || '-'}</td>
-        <td>{formatMoney(item.suspected_amount)}</td>
-        <td>{translateInsuranceType(item.insurance_type)}</td>
+    return filteredRows.map((item, index) => (
+      <tr key={`${item.case_id ?? item.claim_id ?? 'row'}-${index}`}>
+        {getDisplayRow(item).map((value, valueIndex) => (
+          <td key={`${item.case_id ?? item.claim_id ?? index}-${valueIndex}`}>
+            {value === '' || value === null || value === undefined ? '-' : value}
+          </td>
+        ))}
       </tr>
     ));
-  }, [errorMessage, filteredRows, headers.length, isLoading, language, t]);
+  }, [errorMessage, filteredRows, isFraudPerformanceReport, isLoading, performanceMetrics, reportHeaders.length, t]);
 
   return (
     <div dir={isArabic ? 'rtl' : 'ltr'}>
@@ -577,7 +881,7 @@ export default function ReportDetailsPage() {
         </button>
       </div>
 
-      <Table headers={headers}>{rows}</Table>
+      <Table headers={reportHeaders}>{tableRows}</Table>
     </div>
   );
 }
